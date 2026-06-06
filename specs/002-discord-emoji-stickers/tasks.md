@@ -22,11 +22,11 @@ description: "Task list for Discord Emoji-to-Sticker Bot (Bigmoji)"
 
 **Purpose**: Initialize Spring Boot + Discord bot project scaffolding and baseline tooling.
 
-- [ ] T001 Initialize Gradle Spring Boot project skeleton in build.gradle.kts and settings.gradle.kts
-- [ ] T002 Configure base application and environment placeholders in src/main/resources/application.yml and .env.example
-- [ ] T003 [P] Configure code formatting and static analysis plugins in build.gradle.kts
-- [ ] T004 [P] Add containerized local infrastructure definitions in docker-compose.yml and Dockerfile
-- [ ] T005 Create application entrypoint and package structure in src/main/java/com/bigmoji/BigmojiApplication.java
+- [X] T001 Initialize Gradle Spring Boot project skeleton in build.gradle.kts and settings.gradle.kts
+- [X] T002 Configure base application and environment placeholders in src/main/resources/application.yml and .env.example
+- [X] T003 [P] Configure code formatting and static analysis plugins in build.gradle.kts
+- [X] T004 [P] Add containerized local infrastructure definitions in docker-compose.yml and Dockerfile
+- [X] T005 Create application entrypoint and package structure in src/main/java/com/bigmoji/BigmojiApplication.java
 
 ---
 
@@ -36,16 +36,16 @@ description: "Task list for Discord Emoji-to-Sticker Bot (Bigmoji)"
 
 **⚠️ CRITICAL**: No user story work starts before this phase is complete.
 
-- [ ] T006 Create StickerMapping JPA entity with indexes and validation fields in src/main/java/com/bigmoji/domain/entity/StickerMapping.java
-- [ ] T007 [P] Create StickerMappingRepository query interface in src/main/java/com/bigmoji/domain/repository/StickerMappingRepository.java
-- [ ] T008 [P] Implement MinIO client configuration in src/main/java/com/bigmoji/config/MinioConfig.java
-- [ ] T009 [P] Implement Discord JDA configuration and gateway intents in src/main/java/com/bigmoji/config/JdaConfig.java
-- [ ] T010 Implement async executor configuration for message processing in src/main/java/com/bigmoji/config/AsyncConfig.java
-- [ ] T011 Implement API key authentication interceptor in src/main/java/com/bigmoji/config/ApiKeyInterceptor.java
-- [ ] T012 Configure interceptor registration and API route protection in src/main/java/com/bigmoji/config/WebMvcConfig.java
-- [ ] T013 Implement global API error response contract in src/main/java/com/bigmoji/api/exception/GlobalExceptionHandler.java and src/main/java/com/bigmoji/api/dto/ErrorResponse.java
-- [ ] T014 Implement MinIO storage service (upload/delete/presigned URL) in src/main/java/com/bigmoji/storage/MinioStorageService.java
-- [ ] T015 Implement in-memory mapping cache bootstrap and refresh logic in src/main/java/com/bigmoji/sticker/StickerMappingCache.java
+- [X] T006 Create StickerMapping JPA entity with indexes and validation fields in src/main/java/com/bigmoji/domain/entity/StickerMapping.java
+- [X] T007 [P] Create StickerMappingRepository query interface in src/main/java/com/bigmoji/domain/repository/StickerMappingRepository.java
+- [X] T008 [P] Implement MinIO client configuration in src/main/java/com/bigmoji/config/MinioConfig.java
+- [X] T009 [P] Implement Discord JDA configuration and gateway intents in src/main/java/com/bigmoji/config/JdaConfig.java
+- [X] T010 Implement async executor configuration for message processing in src/main/java/com/bigmoji/config/AsyncConfig.java
+- [X] T011 Implement API key authentication interceptor in src/main/java/com/bigmoji/config/ApiKeyInterceptor.java
+- [X] T012 Configure interceptor registration and API route protection in src/main/java/com/bigmoji/config/WebMvcConfig.java
+- [X] T013 Implement global API error response contract in src/main/java/com/bigmoji/api/exception/GlobalExceptionHandler.java and src/main/java/com/bigmoji/api/dto/ErrorResponse.java
+- [X] T014 Implement MinIO storage service (upload/delete/presigned URL) in src/main/java/com/bigmoji/storage/MinioStorageService.java
+- [X] T015 Implement in-memory mapping cache bootstrap and refresh logic in src/main/java/com/bigmoji/sticker/StickerMappingCache.java
 
 **Checkpoint**: Foundation ready; user stories can now be implemented.
 
@@ -59,17 +59,17 @@ description: "Task list for Discord Emoji-to-Sticker Bot (Bigmoji)"
 
 ### Tests for User Story 1
 
-- [ ] T016 [P] [US1] Add unit tests for single-emoji and shortcode detection in src/test/java/com/bigmoji/emoji/EmojiDetectorTest.java
-- [ ] T017 [P] [US1] Add unit tests for mapping selection and no-mapping behavior in src/test/java/com/bigmoji/sticker/StickerMappingServiceTest.java
-- [ ] T018 [US1] Add integration test for message delete + sticker send flow in src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java
+- [X] T016 [P] [US1] Add unit tests for single-emoji and shortcode detection in src/test/java/com/bigmoji/emoji/EmojiDetectorTest.java
+- [X] T017 [P] [US1] Add unit tests for mapping selection and no-mapping behavior in src/test/java/com/bigmoji/sticker/StickerMappingServiceTest.java
+- [X] T018 [US1] Add integration test for message delete + sticker send flow in src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java
 
 ### Implementation for User Story 1
 
-- [ ] T019 [P] [US1] Implement emoji normalization rules for Unicode and shortcode input in src/main/java/com/bigmoji/emoji/EmojiNormalizer.java
-- [ ] T020 [P] [US1] Implement exact single-emoji detection logic in src/main/java/com/bigmoji/emoji/EmojiDetector.java
-- [ ] T021 [US1] Implement sticker lookup and random selection service in src/main/java/com/bigmoji/sticker/StickerMappingService.java
-- [ ] T022 [US1] Implement Discord sticker sender using attachment workflow in src/main/java/com/bigmoji/discord/StickerSenderService.java
-- [ ] T023 [US1] Implement Discord message listener flow for detect→lookup→delete→send in src/main/java/com/bigmoji/discord/EmojiMessageListener.java
+- [X] T019 [P] [US1] Implement emoji normalization rules for Unicode and shortcode input in src/main/java/com/bigmoji/emoji/EmojiNormalizer.java
+- [X] T020 [P] [US1] Implement exact single-emoji detection logic in src/main/java/com/bigmoji/emoji/EmojiDetector.java
+- [X] T021 [US1] Implement sticker lookup and random selection service in src/main/java/com/bigmoji/sticker/StickerMappingService.java
+- [X] T022 [US1] Implement Discord sticker sender using attachment workflow in src/main/java/com/bigmoji/discord/StickerSenderService.java
+- [X] T023 [US1] Implement Discord message listener flow for detect→lookup→delete→send in src/main/java/com/bigmoji/discord/EmojiMessageListener.java
 
 **Checkpoint**: User Story 1 should be independently functional and demo-ready (MVP).
 
@@ -83,14 +83,14 @@ description: "Task list for Discord Emoji-to-Sticker Bot (Bigmoji)"
 
 ### Tests for User Story 2
 
-- [ ] T024 [P] [US2] Extend detector unit tests for multi-emoji and mixed-content negative cases in src/test/java/com/bigmoji/emoji/EmojiDetectorTest.java
-- [ ] T025 [US2] Add listener integration tests validating ignore behavior for invalid patterns in src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java
+- [X] T024 [P] [US2] Extend detector unit tests for multi-emoji and mixed-content negative cases in src/test/java/com/bigmoji/emoji/EmojiDetectorTest.java
+- [X] T025 [US2] Add listener integration tests validating ignore behavior for invalid patterns in src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java
 
 ### Implementation for User Story 2
 
-- [ ] T026 [US2] Harden detection guards for mixed-content and whitespace edge cases in src/main/java/com/bigmoji/emoji/EmojiDetector.java
-- [ ] T027 [US2] Add listener early-return logic for ignored message categories and self-message loop prevention in src/main/java/com/bigmoji/discord/EmojiMessageListener.java
-- [ ] T028 [US2] Add structured debug logging for ignored-message reasons in src/main/java/com/bigmoji/discord/EmojiMessageListener.java
+- [X] T026 [US2] Harden detection guards for mixed-content and whitespace edge cases in src/main/java/com/bigmoji/emoji/EmojiDetector.java
+- [X] T027 [US2] Add listener early-return logic for ignored message categories and self-message loop prevention in src/main/java/com/bigmoji/discord/EmojiMessageListener.java
+- [X] T028 [US2] Add structured debug logging for ignored-message reasons in src/main/java/com/bigmoji/discord/EmojiMessageListener.java
 
 **Checkpoint**: User Story 2 is independently testable with zero false-positive replacements for invalid message shapes.
 
@@ -104,16 +104,16 @@ description: "Task list for Discord Emoji-to-Sticker Bot (Bigmoji)"
 
 ### Tests for User Story 3
 
-- [ ] T029 [P] [US3] Add API contract tests for POST/GET/DELETE mapping endpoints in src/test/java/com/bigmoji/api/StickerMappingControllerContractTest.java
-- [ ] T030 [P] [US3] Add integration tests for repository/cache synchronization after API writes in src/test/java/com/bigmoji/api/StickerMappingControllerIntegrationTest.java
-- [ ] T031 [US3] Add authentication interceptor tests for missing/invalid API key in src/test/java/com/bigmoji/config/ApiKeyInterceptorTest.java
+- [X] T029 [P] [US3] Add API contract tests for POST/GET/DELETE mapping endpoints in src/test/java/com/bigmoji/api/StickerMappingControllerContractTest.java
+- [X] T030 [P] [US3] Add integration tests for repository/cache synchronization after API writes in src/test/java/com/bigmoji/api/StickerMappingControllerIntegrationTest.java
+- [X] T031 [US3] Add authentication interceptor tests for missing/invalid API key in src/test/java/com/bigmoji/config/ApiKeyInterceptorTest.java
 
 ### Implementation for User Story 3
 
-- [ ] T032 [P] [US3] Create API DTOs for mapping upload and response payloads in src/main/java/com/bigmoji/api/dto/MappingUploadRequest.java and src/main/java/com/bigmoji/api/dto/MappingResponse.java
-- [ ] T033 [US3] Implement REST controller endpoints for upload/list/delete mappings in src/main/java/com/bigmoji/api/StickerMappingController.java
-- [ ] T034 [US3] Implement service-layer upload/list/delete workflow with DB + MinIO + cache updates in src/main/java/com/bigmoji/sticker/StickerMappingService.java
-- [ ] T035 [US3] Add upload validation for file format/size and guildId/emojiName constraints in src/main/java/com/bigmoji/api/StickerMappingController.java
+- [X] T032 [P] [US3] Create API DTOs for mapping upload and response payloads in src/main/java/com/bigmoji/api/dto/MappingUploadRequest.java and src/main/java/com/bigmoji/api/dto/MappingResponse.java
+- [X] T033 [US3] Implement REST controller endpoints for upload/list/delete mappings in src/main/java/com/bigmoji/api/StickerMappingController.java
+- [X] T034 [US3] Implement service-layer upload/list/delete workflow with DB + MinIO + cache updates in src/main/java/com/bigmoji/sticker/StickerMappingService.java
+- [X] T035 [US3] Add upload validation for file format/size and guildId/emojiName constraints in src/main/java/com/bigmoji/api/StickerMappingController.java
 
 **Checkpoint**: User Story 3 APIs are independently usable for guild-specific mapping management.
 
@@ -127,15 +127,15 @@ description: "Task list for Discord Emoji-to-Sticker Bot (Bigmoji)"
 
 ### Tests for User Story 4
 
-- [ ] T036 [P] [US4] Add integration tests for default sticker seeding on new guild initialization in src/test/java/com/bigmoji/sticker/DefaultStickerInitializerTest.java
-- [ ] T037 [US4] Add API contract test for default sticker metadata endpoint in src/test/java/com/bigmoji/api/DefaultStickersControllerContractTest.java
+- [X] T036 [P] [US4] Add integration tests for default sticker seeding on new guild initialization in src/test/java/com/bigmoji/sticker/DefaultStickerInitializerTest.java
+- [X] T037 [US4] Add API contract test for default sticker metadata endpoint in src/test/java/com/bigmoji/api/DefaultStickersControllerContractTest.java
 
 ### Implementation for User Story 4
 
-- [ ] T038 [P] [US4] Add default sticker image assets for popular emojis in src/main/resources/default-stickers/smile.png, src/main/resources/default-stickers/heart.png, src/main/resources/default-stickers/party.png, src/main/resources/default-stickers/thumbsup.png, and src/main/resources/default-stickers/fire.png
-- [ ] T039 [US4] Implement default sticker initialization service for first-use guild bootstrap in src/main/java/com/bigmoji/sticker/DefaultStickerInitializer.java
-- [ ] T040 [US4] Implement API endpoint for listing default sticker metadata in src/main/java/com/bigmoji/api/DefaultStickersController.java
-- [ ] T041 [US4] Integrate default initialization trigger into message processing and mapping retrieval flows in src/main/java/com/bigmoji/discord/EmojiMessageListener.java and src/main/java/com/bigmoji/sticker/StickerMappingService.java
+- [X] T038 [P] [US4] Add default sticker image assets for popular emojis in src/main/resources/default-stickers/smile.png, src/main/resources/default-stickers/heart.png, src/main/resources/default-stickers/party.png, src/main/resources/default-stickers/thumbsup.png, and src/main/resources/default-stickers/fire.png
+- [X] T039 [US4] Implement default sticker initialization service for first-use guild bootstrap in src/main/java/com/bigmoji/sticker/DefaultStickerInitializer.java
+- [X] T040 [US4] Implement API endpoint for listing default sticker metadata in src/main/java/com/bigmoji/api/DefaultStickersController.java
+- [X] T041 [US4] Integrate default initialization trigger into message processing and mapping retrieval flows in src/main/java/com/bigmoji/discord/EmojiMessageListener.java and src/main/java/com/bigmoji/sticker/StickerMappingService.java
 
 **Checkpoint**: User Story 4 provides immediate first-use value with default mappings.
 
@@ -145,10 +145,10 @@ description: "Task list for Discord Emoji-to-Sticker Bot (Bigmoji)"
 
 **Purpose**: Improve operability, quality gates, and production readiness across all stories.
 
-- [ ] T042 [P] Add OpenAPI documentation annotations and endpoint examples in src/main/java/com/bigmoji/api/StickerMappingController.java and src/main/java/com/bigmoji/api/DefaultStickersController.java
-- [ ] T043 Add actuator health contributors for PostgreSQL and MinIO readiness in src/main/java/com/bigmoji/config/HealthConfig.java
-- [ ] T044 [P] Add performance-focused integration tests for cache-hit lookup latency and concurrent message handling in src/test/java/com/bigmoji/perf/MessageProcessingPerformanceTest.java
-- [ ] T045 Validate quickstart runbook and update operational notes in specs/002-discord-emoji-stickers/quickstart.md
+- [X] T042 [P] Add OpenAPI documentation annotations and endpoint examples in src/main/java/com/bigmoji/api/StickerMappingController.java and src/main/java/com/bigmoji/api/DefaultStickersController.java
+- [X] T043 Add actuator health contributors for PostgreSQL and MinIO readiness in src/main/java/com/bigmoji/config/HealthConfig.java
+- [X] T044 [P] Add performance-focused integration tests for cache-hit lookup latency and concurrent message handling in src/test/java/com/bigmoji/perf/MessageProcessingPerformanceTest.java
+- [X] T045 Validate quickstart runbook and update operational notes in specs/002-discord-emoji-stickers/quickstart.md
 
 ---
 

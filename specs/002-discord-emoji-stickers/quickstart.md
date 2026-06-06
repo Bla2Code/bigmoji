@@ -117,3 +117,10 @@ curl http://localhost:8080/api/stickers/default \
 - **MinIO connection errors**: Verify `MINIO_ENDPOINT` is accessible from the container network
 - **Database connection errors**: Check PostgreSQL is running and credentials match
 - **API returns 401**: Verify `X-API-Key` header matches the `API_KEY` environment variable
+
+## Operational Notes
+
+- Validate API auth by calling `/api/mappings/{guildId}` with and without `X-API-Key`.
+- Validate default sticker metadata via `/api/stickers/default`.
+- For production, rotate `API_KEY` and restrict API ingress to trusted admins.
+
