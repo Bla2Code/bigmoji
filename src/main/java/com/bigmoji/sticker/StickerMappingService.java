@@ -37,8 +37,8 @@ public class StickerMappingService {
     return Optional.of(mappings.get(random.nextInt(mappings.size())));
   }
 
-  public StickerMapping create(String guildId, String emojiName, MultipartFile file, boolean isDefault)
-      throws Exception {
+  public StickerMapping create(
+      String guildId, String emojiName, MultipartFile file, boolean isDefault) throws Exception {
     String ext = extension(file.getOriginalFilename());
     String objectKey;
     try (InputStream is = file.getInputStream()) {
@@ -61,7 +61,9 @@ public class StickerMappingService {
 
   public void deleteById(UUID id) throws Exception {
     StickerMapping mapping =
-        repository.findById(id).orElseThrow(() -> new IllegalArgumentException("Mapping not found"));
+        repository
+            .findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Mapping not found"));
     storage.delete(mapping.getMinioBucketName(), mapping.getMinioObjectKey());
     repository.deleteById(id);
     cache.refreshGuildEmoji(mapping.getGuildId(), mapping.getEmojiName());

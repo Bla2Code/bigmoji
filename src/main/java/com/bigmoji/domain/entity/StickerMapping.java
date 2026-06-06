@@ -57,20 +57,67 @@ public class StickerMapping {
     updatedAt = Instant.now();
   }
 
-  public UUID getId() { return id; }
-  public void setId(UUID id) { this.id = id; }
-  public String getGuildId() { return guildId; }
-  public void setGuildId(String guildId) { this.guildId = guildId; }
-  public String getEmojiName() { return emojiName; }
-  public void setEmojiName(String emojiName) { this.emojiName = emojiName; }
-  public String getMinioBucketName() { return minioBucketName; }
-  public void setMinioBucketName(String minioBucketName) { this.minioBucketName = minioBucketName; }
-  public String getMinioObjectKey() { return minioObjectKey; }
-  public void setMinioObjectKey(String minioObjectKey) { this.minioObjectKey = minioObjectKey; }
-  public boolean isDefault() { return isDefault; }
-  public void setDefault(boolean aDefault) { isDefault = aDefault; }
-  public Instant getCreatedAt() { return createdAt; }
-  public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-  public Instant getUpdatedAt() { return updatedAt; }
-  public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+  public UUID getId() {
+    return id;
+  }
+
+  public void setId(UUID id) {
+    this.id = id;
+  }
+
+  public String getGuildId() {
+    return guildId;
+  }
+
+  public void setGuildId(String guildId) {
+    this.guildId = guildId;
+  }
+
+  public String getEmojiName() {
+    return emojiName;
+  }
+
+  public void setEmojiName(String emojiName) {
+    this.emojiName = emojiName;
+  }
+
+  public String getMinioBucketName() {
+    return minioBucketName;
+  }
+
+  public void setMinioBucketName(String minioBucketName) {
+    this.minioBucketName = minioBucketName;
+  }
+
+  public String getMinioObjectKey() {
+    return minioObjectKey;
+  }
+
+  public void setMinioObjectKey(String minioObjectKey) {
+    this.minioObjectKey = minioObjectKey;
+  }
+
+  public boolean isDefault() {
+    return isDefault;
+  }
+
+  public void setDefault(boolean aDefault) {
+    isDefault = aDefault;
+  }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(Instant createdAt) {
+    this.createdAt = createdAt;
+  }
+
+  public Instant getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public void setUpdatedAt(Instant updatedAt) {
+    this.updatedAt = updatedAt;
+  }
 }

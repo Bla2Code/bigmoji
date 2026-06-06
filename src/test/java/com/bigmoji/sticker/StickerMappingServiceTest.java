@@ -18,7 +18,8 @@ class StickerMappingServiceTest {
     MinioStorageService storage = mock(MinioStorageService.class);
     when(cache.find("1", "smile")).thenReturn(List.of());
 
-    StickerMappingService service = new StickerMappingService(repo, cache, storage, Optional.empty());
+    StickerMappingService service =
+        new StickerMappingService(repo, cache, storage, Optional.empty());
     assertTrue(service.pickRandomMapping("1", "smile").isEmpty());
   }
 
@@ -30,7 +31,8 @@ class StickerMappingServiceTest {
     StickerMapping m = new StickerMapping();
     when(cache.find("1", "smile")).thenReturn(List.of(m));
 
-    StickerMappingService service = new StickerMappingService(repo, cache, storage, Optional.empty());
+    StickerMappingService service =
+        new StickerMappingService(repo, cache, storage, Optional.empty());
     assertTrue(service.pickRandomMapping("1", "smile").isPresent());
   }
 }

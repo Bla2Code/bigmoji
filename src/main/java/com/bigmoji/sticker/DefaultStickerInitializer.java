@@ -30,5 +30,6 @@ public class DefaultStickerInitializer {
     return DEFAULTS;
   }
 
-  public record DefaultSticker(String emojiName, String shortcodeName, String description, String fileName) {}
+  public record DefaultSticker(
+      String emojiName, String shortcodeName, String description, String fileName) {}
 }

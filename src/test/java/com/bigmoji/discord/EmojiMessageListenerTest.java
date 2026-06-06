@@ -9,8 +9,8 @@ import com.bigmoji.storage.MinioStorageService;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +21,8 @@ class EmojiMessageListenerTest {
     StickerMappingService mappingService = mock(StickerMappingService.class);
     StickerSenderService sender = mock(StickerSenderService.class);
     MinioStorageService storage = mock(MinioStorageService.class);
-    EmojiMessageListener listener = new EmojiMessageListener(detector, mappingService, sender, storage);
+    EmojiMessageListener listener =
+        new EmojiMessageListener(detector, mappingService, sender, storage);
 
     MessageReceivedEvent event = mock(MessageReceivedEvent.class);
     Message message = mock(Message.class);
@@ -43,13 +44,14 @@ class EmojiMessageListenerTest {
     StickerMappingService mappingService = mock(StickerMappingService.class);
     StickerSenderService sender = mock(StickerSenderService.class);
     MinioStorageService storage = mock(MinioStorageService.class);
-    EmojiMessageListener listener = new EmojiMessageListener(detector, mappingService, sender, storage);
+    EmojiMessageListener listener =
+        new EmojiMessageListener(detector, mappingService, sender, storage);
 
     MessageReceivedEvent event = mock(MessageReceivedEvent.class);
     Message message = mock(Message.class);
     User user = mock(User.class);
     Guild guild = mock(Guild.class);
-    MessageChannel channel = mock(MessageChannel.class);
+    MessageChannelUnion channel = mock(MessageChannelUnion.class);
     StickerMapping mapping = new StickerMapping();
     mapping.setMinioBucketName("b");
     mapping.setMinioObjectKey("o");

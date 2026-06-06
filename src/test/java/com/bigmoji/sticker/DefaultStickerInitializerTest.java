@@ -9,7 +9,8 @@ import org.junit.jupiter.api.Test;
 class DefaultStickerInitializerTest {
   @Test
   void providesFiveDefaults() {
-    DefaultStickerInitializer init = new DefaultStickerInitializer(mock(StickerMappingRepository.class));
+    DefaultStickerInitializer init =
+        new DefaultStickerInitializer(mock(StickerMappingRepository.class));
     assertEquals(5, init.defaults().size());
   }
 }

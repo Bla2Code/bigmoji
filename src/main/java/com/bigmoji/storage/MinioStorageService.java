@@ -18,21 +18,20 @@ public class MinioStorageService {
   private final String bucketPrefix;
 
   public MinioStorageService(
-      MinioClient minioClient, @Value("${bigmoji.minio.bucket-prefix:bigmoji-}") String bucketPrefix) {
+      MinioClient minioClient,
+      @Value("${bigmoji.minio.bucket-prefix:bigmoji-}") String bucketPrefix) {
     this.minioClient = minioClient;
     this.bucketPrefix = bucketPrefix;
   }
 
-  public String upload(String guildId, String extension, InputStream inputStream, long size, String contentType)
+  public String upload(
+      String guildId, String extension, InputStream inputStream, long size, String contentType)
       throws Exception {
     String bucket = bucketPrefix + guildId;
     ensureBucket(bucket);
     String objectKey = UUID.randomUUID() + extension;
     minioClient.putObject(
-        PutObjectArgs.builder()
-            .bucket(bucket)
-            .object(objectKey)
-            .stream(inputStream, size, -1)
+        PutObjectArgs.builder().bucket(bucket).object(objectKey).stream(inputStream, size, -1)
             .contentType(contentType)
             .build());
     return objectKey;

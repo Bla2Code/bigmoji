@@ -24,7 +24,15 @@ public class StickerMappingCache {
 
   public void refreshAll() {
     cache.clear();
-    repository.findAll().forEach(mapping -> cache.computeIfAbsent(key(mapping.getGuildId(), mapping.getEmojiName()), k -> new java.util.ArrayList<>()).add(mapping));
+    repository
+        .findAll()
+        .forEach(
+            mapping ->
+                cache
+                    .computeIfAbsent(
+                        key(mapping.getGuildId(), mapping.getEmojiName()),
+                        k -> new java.util.ArrayList<>())
+                    .add(mapping));
   }
 
   public void refreshGuildEmoji(String guildId, String emojiName) {

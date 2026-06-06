@@ -15,7 +15,8 @@ public class EmojiDetector {
     if (trimmed.isEmpty()) return false;
     if (SHORTCODE.matcher(trimmed).matches()) return true;
     int codePoints = trimmed.codePointCount(0, trimmed.length());
-    return codePoints == 1 || (codePoints <= 4 && trimmed.matches("[\\p{So}\\p{Sk}\\uFE0F\\u200D]+"));
+    return codePoints == 1
+        || (codePoints <= 4 && trimmed.matches("[\\p{So}\\p{Sk}\\uFE0F\\u200D]+"));
   }
 
   public String normalize(String content) {

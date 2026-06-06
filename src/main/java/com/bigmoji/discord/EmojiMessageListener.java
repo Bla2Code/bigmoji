@@ -8,9 +8,9 @@ import java.util.Optional;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import org.springframework.scheduling.annotation.Async;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -54,9 +54,11 @@ public class EmojiMessageListener extends ListenerAdapter {
     }
 
     try {
-      String url = storageService.presignedGetUrl(mapping.get().getMinioBucketName(), mapping.get().getMinioObjectKey());
-      message.delete().queue();
+      String url =
+          storageService.presignedGetUrl(
+              mapping.get().getMinioBucketName(), mapping.get().getMinioObjectKey());
       senderService.send(event.getChannel(), url);
+      message.delete().queue();
     } catch (Exception e) {
       log.debug("Failed to send sticker replacement: {}", e.getMessage());
     }
