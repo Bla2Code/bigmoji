@@ -10,4 +10,9 @@ dist/
 build/
 *.log
 .env*
+!.env.example
 target/
+.gradle/
+out/
+*.class
+*.jar

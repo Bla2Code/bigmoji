@@ -10,7 +10,10 @@ class DefaultStickerInitializerTest {
   @Test
   void providesFiveDefaults() {
     DefaultStickerInitializer init =
-        new DefaultStickerInitializer(mock(StickerMappingRepository.class));
+        new DefaultStickerInitializer(
+            mock(StickerMappingRepository.class),
+            mock(com.bigmoji.storage.MinioStorageService.class),
+            mock(org.springframework.core.io.ResourceLoader.class));
     assertEquals(5, init.defaults().size());
   }
 }

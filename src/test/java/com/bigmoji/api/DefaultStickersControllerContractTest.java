@@ -11,7 +11,10 @@ class DefaultStickersControllerContractTest {
   @Test
   void returnsDefaults() {
     DefaultStickerInitializer i =
-        new DefaultStickerInitializer(mock(StickerMappingRepository.class));
+        new DefaultStickerInitializer(
+            mock(StickerMappingRepository.class),
+            mock(com.bigmoji.storage.MinioStorageService.class),
+            mock(org.springframework.core.io.ResourceLoader.class));
     DefaultStickersController c = new DefaultStickersController(i);
     assertEquals(5, c.defaults().size());
   }
