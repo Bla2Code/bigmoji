@@ -73,17 +73,17 @@
 
 ---
 
-## Decision: Default Sticker Distribution
+## Decision: Local Fallback Sticker Distribution
 
-**Context**: Bot needs pre-installed default stickers for popular emojis.
+**Context**: Bot needs pre-installed fallback stickers for popular emojis without polluting per-guild database mappings.
 
-**Decision**: Embed default sticker images in `src/main/resources/default-stickers/`. On first startup (or when a guild has no mappings), upload these images to the guild's MinIO bucket and create default mapping entries in the database.
+**Decision**: Embed fallback sticker images in `src/main/resources/default-stickers/` and load them as local runtime resources. Use them only when DB lookup for `{guildId, emoji}` succeeds with no mappings. Do not upload fallback assets to MinIO and do not create fallback rows in the database.
 
-**Rationale**: Self-contained deployment, no external dependencies for default stickers. Images are uploaded to MinIO so they can be served via presigned URLs consistently with custom stickers.
+**Rationale**: Keeps database strictly for user-managed mappings, avoids bootstrap migration complexity, and preserves clear operational behavior where DB failures are observable instead of masked by fallback.
 
 **Alternatives considered**:
-- Download default stickers from a CDN on startup — rejected as it adds external dependency
-- Hardcode presigned URLs to a shared bucket — rejected as it complicates per-guild isolation
+- Upload fallback stickers to MinIO and persist as default DB mappings — rejected because it mixes system defaults with user data
+- Download fallback stickers from a CDN on startup — rejected as it adds external dependency
 
 ---
 

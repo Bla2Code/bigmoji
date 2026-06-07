@@ -13,7 +13,6 @@ Represents the association between an emoji and a sticker image for a specific D
 | `emojiName` | String (VARCHAR 64) | NOT NULL, INDEX | Emoji identifier (Unicode char or shortcode name like "smile") |
 | `minioBucketName` | String (VARCHAR 128) | NOT NULL | MinIO bucket name (format: `bigmoji-{guildId}`) |
 | `minioObjectKey` | String (VARCHAR 256) | NOT NULL | MinIO object key (format: `{uuid}.{ext}`) |
-| `isDefault` | Boolean | NOT NULL, DEFAULT false | Whether this is a default sticker |
 | `createdAt` | Instant | NOT NULL | Creation timestamp |
 | `updatedAt` | Instant | NOT NULL | Last update timestamp |
 
@@ -42,7 +41,6 @@ CREATE TABLE sticker_mapping (
     emoji_name VARCHAR(64) NOT NULL,
     minio_bucket_name VARCHAR(128) NOT NULL,
     minio_object_key VARCHAR(256) NOT NULL,
-    is_default BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
@@ -76,15 +74,27 @@ public class StickerMapping {
     @Column(name = "minio_object_key", nullable = false, length = 256)
     private String minioObjectKey;
 
-    @Column(name = "is_default", nullable = false)
-    private boolean isDefault;
-
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 }
+
+## Runtime-Only Fallback Catalog (Non-Persistent)
+
+### LocalFallbackSticker
+
+Represents a packaged fallback asset loaded from application resources and used only when no DB mapping exists for `{guildId, emojiName}`.
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `emojiName` | String | NOT NULL | Supported fallback emoji key |
+| `resourcePath` | String | NOT NULL | Classpath location of fallback image |
+| `mediaType` | String | NOT NULL | MIME type for Discord attachment upload |
+
+**Persistence Rule**:
+- This structure is in-memory only and has no PostgreSQL table.
 ```
 
 ## Spring Data JPA Repository

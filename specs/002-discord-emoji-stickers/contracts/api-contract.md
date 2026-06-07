@@ -31,7 +31,6 @@ Upload a new sticker image and create an emoji-to-sticker mapping.
   "emojiName": "😊",
   "minioBucketName": "bigmoji-123456789012345678",
   "minioObjectKey": "f47ac10b-58cc-4372-a567-0e02b2c3d479.png",
-  "isDefault": false,
   "createdAt": "2026-06-03T15:00:00Z",
   "updatedAt": "2026-06-03T15:00:00Z"
 }
@@ -48,7 +47,7 @@ Upload a new sticker image and create an emoji-to-sticker mapping.
 
 **GET** `/api/mappings/{guildId}`
 
-Retrieve all emoji-to-sticker mappings for a specific Discord server.
+Retrieve all persisted emoji-to-sticker mappings for a specific Discord server. Runtime local fallback stickers are excluded from this endpoint.
 
 **Authentication**: Required (`X-API-Key` header)
 
@@ -64,17 +63,6 @@ Retrieve all emoji-to-sticker mappings for a specific Discord server.
     "emojiName": "😊",
     "minioBucketName": "bigmoji-123456789012345678",
     "minioObjectKey": "f47ac10b-58cc-4372-a567-0e02b2c3d479.png",
-    "isDefault": true,
-    "createdAt": "2026-06-03T15:00:00Z",
-    "updatedAt": "2026-06-03T15:00:00Z"
-  },
-  {
-    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-    "guildId": "123456789012345678",
-    "emojiName": "😊",
-    "minioBucketName": "bigmoji-123456789012345678",
-    "minioObjectKey": "a1b2c3d4-e5f6-7890-abcd-ef9876543210.png",
-    "isDefault": false,
     "createdAt": "2026-06-03T16:00:00Z",
     "updatedAt": "2026-06-03T16:00:00Z"
   }

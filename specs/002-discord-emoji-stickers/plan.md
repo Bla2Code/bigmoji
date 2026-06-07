@@ -6,11 +6,11 @@
 
 ## Summary
 
-Build a Discord bot (Bigmoji) that detects single-emoji messages in Discord channels, deletes them, and posts a matching large sticker image from a per-server configurable collection. The bot is a Spring Boot 4.0.6 application using JDA for Discord integration, PostgreSQL for mapping storage, MinIO for image storage, and exposes a REST API for sticker management.
+Build a Discord bot (Bigmoji) that detects single-emoji messages in Discord channels, deletes them, and posts a matching large sticker image from a per-server configurable collection. The bot is a Spring Boot 4.0.6 application using JDA for Discord integration, PostgreSQL for custom mapping storage, MinIO for custom image storage, and packaged local fallback sticker assets for predefined emojis when no DB mapping exists for the guild+emoji pair.
 
 ## Technical Context
 
-**Language/Version**: Java 25
+**Language/Version**: Java 21
 
 **Primary Dependencies**: Spring Boot 4.0.6, JDA (Java Discord API), Hibernate/JPA with Spring Data JPA, MinIO Java SDK, Spring Boot Actuator, SpringDoc OpenAPI 3 (Swagger UI)
 
@@ -33,12 +33,14 @@ Build a Discord bot (Bigmoji) that detects single-emoji messages in Discord chan
 - Sticker images sent as attachments (not Discord's official sticker API) for simplicity
 - Single emoji detection must be accurate (99% per SC-002, SC-003)
 - Memory-loaded mappings for fast lookup on startup
+- Local fallback sticker assets are runtime-only resources and MUST NOT be persisted in PostgreSQL
+- On database lookup failure/timeout, bot MUST skip replacement (no fallback masking operational failures)
 
 **Scale/Scope**: 
 - 100 concurrent Discord servers
 - Multiple stickers per emoji (random selection)
 - Per-guild isolated mappings
-- Default sticker set for 5 popular emojis
+- Local fallback sticker set for 5 popular emojis
 
 ## Constitution Check
 
@@ -100,7 +102,7 @@ bigmoji/
 │   │   │   ├── sticker/
 │   │   │   │   ├── StickerMappingService.java
 │   │   │   │   ├── StickerMappingCache.java
-│   │   │   │   └── DefaultStickerInitializer.java
+│   │   │   │   └── DefaultStickerInitializer.java (runtime fallback catalog loader; no DB seeding)
 │   │   │   ├── api/
 │   │   │   │   ├── StickerMappingController.java
 │   │   │   │   ├── dto/
@@ -153,7 +155,7 @@ bigmoji/
 |-----------|--------|-------|
 | **I. Code Quality - Linting & Formatting** | ✅ PASS | Spotless + google-java-format configured in build.gradle.kts |
 | **I. Code Quality - Code Reviews** | ✅ PASS | Standard PR workflow |
-| **I. Code Quality - Simplicity First** | ✅ PASS | YAGNI applied: API key auth only, attachment-based stickers, ConcurrentHashMap cache |
+| **I. Code Quality - Simplicity First** | ✅ PASS | YAGNI applied: API key auth only, attachment-based stickers, ConcurrentHashMap cache, fallback assets from local resources (no default DB bootstrap) |
 | **I. Code Quality - Documentation** | ✅ PASS | OpenAPI/Swagger auto-generated, Javadoc for public interfaces, API contract documented |
 | **I. Code Quality - Error Handling** | ✅ PASS | GlobalExceptionHandler with consistent error format, no silent failures |
 | **II. Testing - 80% Coverage** | ✅ PASS | Unit tests per service, integration tests with Testcontainers (PostgreSQL + MinIO) |

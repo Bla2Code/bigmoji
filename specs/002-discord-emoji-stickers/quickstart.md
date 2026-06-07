@@ -77,7 +77,7 @@ curl -X POST http://localhost:8080/api/mappings \
   -F "file=@/path/to/sticker.png"
 ```
 
-### List mappings:
+### List mappings (persisted custom mappings only):
 ```bash
 curl http://localhost:8080/api/mappings/123456789012345678 \
   -H "X-API-Key: your_secret_api_key_here"
@@ -121,6 +121,6 @@ curl http://localhost:8080/api/stickers/default \
 ## Operational Notes
 
 - Validate API auth by calling `/api/mappings/{guildId}` with and without `X-API-Key`.
-- Validate default sticker metadata via `/api/stickers/default`.
+- Validate fallback sticker metadata via `/api/stickers/default`.
 - For production, rotate `API_KEY` and restrict API ingress to trusted admins.
 
