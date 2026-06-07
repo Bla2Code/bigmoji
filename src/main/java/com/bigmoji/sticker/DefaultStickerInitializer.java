@@ -1,8 +1,14 @@
 package com.bigmoji.sticker;
 
+import com.bigmoji.domain.entity.StickerMapping;
 import com.bigmoji.domain.repository.StickerMappingRepository;
+import com.bigmoji.storage.MinioStorageService;
+import java.io.InputStream;
 import java.util.List;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class DefaultStickerInitializer {
@@ -15,14 +21,42 @@ public class DefaultStickerInitializer {
           new DefaultSticker("🔥", "fire", "Fire", "fire.png"));
 
   private final StickerMappingRepository repository;
+  private final MinioStorageService storageService;
+  private final ResourceLoader resourceLoader;
 
-  public DefaultStickerInitializer(StickerMappingRepository repository) {
+  public DefaultStickerInitializer(
+      StickerMappingRepository repository,
+      MinioStorageService storageService,
+      ResourceLoader resourceLoader) {
     this.repository = repository;
+    this.storageService = storageService;
+    this.resourceLoader = resourceLoader;
   }
 
+  @Transactional
   public void initializeForGuildIfMissing(String guildId) {
     if (!repository.existsByGuildId(guildId)) {
-      // minimal hook; fully populating defaults happens during API upload or bootstrap flow.
+      for (DefaultSticker def : DEFAULTS) {
+        try {
+          String bucketName = storageService.bucketForGuild(guildId);
+          Resource resource =
+              resourceLoader.getResource("classpath:default-stickers/" + def.fileName());
+          long size = resource.contentLength();
+          String objectKey;
+          try (InputStream is = resource.getInputStream()) {
+            objectKey = storageService.upload(guildId, ".png", is, size, "image/png");
+          }
+          StickerMapping mapping = new StickerMapping();
+          mapping.setGuildId(guildId);
+          mapping.setEmojiName(def.emojiName());
+          mapping.setMinioBucketName(bucketName);
+          mapping.setMinioObjectKey(objectKey);
+          mapping.setDefault(true);
+          repository.save(mapping);
+        } catch (Exception e) {
+          throw new RuntimeException("Failed to initialize default sticker: " + def.fileName(), e);
+        }
+      }
     }
   }
 
