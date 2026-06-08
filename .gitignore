@@ -16,3 +16,4 @@ target/
 out/
 *.class
 *.jar
+/.gradle/
