@@ -36,17 +36,29 @@ public class EmojiMessageListener extends ListenerAdapter {
   @Async("messageExecutor")
   public void onMessageReceived(MessageReceivedEvent event) {
     Message message = event.getMessage();
+    String raw = message.getContentRaw();
+    String sourceGuildId = event.isFromGuild() ? event.getGuild().getId() : "DM";
+
+    log.debug(
+        "Discord message received: guildId={}, channelId={}, authorId={}, isBot={}, content={}",
+        sourceGuildId,
+        event.getChannel().getId(),
+        event.getAuthor().getId(),
+        event.getAuthor().isBot(),
+        raw);
+
     if (event.getAuthor().isBot()) {
       return;
     }
 
-    String raw = message.getContentRaw();
     if (!detector.isSingleEmojiMessage(raw)) {
       return;
     }
 
     String normalized = detector.normalize(raw);
     String guildId = event.getGuild().getId();
+
+    log.debug("Processing single-emoji message: guildId={}, normalizedEmoji={}", guildId, normalized);
 
     Optional<StickerMapping> mapping = mappingService.pickRandomMapping(guildId, normalized);
     if (mapping.isEmpty()) {
