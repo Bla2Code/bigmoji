@@ -28,14 +28,49 @@ class EmojiMessageListenerTest {
     Message message = mock(Message.class);
     User user = mock(User.class);
 
+    MessageChannelUnion channel = mock(MessageChannelUnion.class);
+
     when(event.getAuthor()).thenReturn(user);
     when(user.isBot()).thenReturn(false);
+    when(event.isFromGuild()).thenReturn(false);
+    when(event.getChannel()).thenReturn(channel);
+    when(channel.getId()).thenReturn("ch-1");
     when(event.getMessage()).thenReturn(message);
     when(message.getContentRaw()).thenReturn("hello");
     when(detector.isSingleEmojiMessage("hello")).thenReturn(false);
 
     listener.onMessageReceived(event);
-    verifyNoInteractions(mappingService);
+
+    verify(detector).isSingleEmojiMessage("hello");
+    verifyNoInteractions(mappingService, sender, storage);
+  }
+
+  @Test
+  void ignoresBotMessage() {
+    EmojiDetector detector = mock(EmojiDetector.class);
+    StickerMappingService mappingService = mock(StickerMappingService.class);
+    StickerSenderService sender = mock(StickerSenderService.class);
+    MinioStorageService storage = mock(MinioStorageService.class);
+    EmojiMessageListener listener =
+        new EmojiMessageListener(detector, mappingService, sender, storage);
+
+    MessageReceivedEvent event = mock(MessageReceivedEvent.class);
+    Message message = mock(Message.class);
+    User user = mock(User.class);
+
+    MessageChannelUnion channel = mock(MessageChannelUnion.class);
+
+    when(event.getAuthor()).thenReturn(user);
+    when(user.isBot()).thenReturn(true);
+    when(event.isFromGuild()).thenReturn(false);
+    when(event.getChannel()).thenReturn(channel);
+    when(channel.getId()).thenReturn("ch-1");
+    when(event.getMessage()).thenReturn(message);
+    when(message.getContentRaw()).thenReturn("😊");
+
+    listener.onMessageReceived(event);
+
+    verifyNoInteractions(detector, mappingService, sender, storage);
   }
 
   @Test
@@ -67,6 +102,7 @@ class EmojiMessageListenerTest {
     when(mappingService.pickRandomMapping("1", "😊")).thenReturn(Optional.of(mapping));
     when(storage.presignedGetUrl("b", "o")).thenReturn("http://example");
     when(event.getChannel()).thenReturn(channel);
+    when(channel.getId()).thenReturn("ch-2");
 
     listener.onMessageReceived(event);
     verify(sender).send(channel, "http://example");

@@ -31,3 +31,9 @@ management:
     web:
       exposure:
         include: health,info
+
+logging:
+  level:
+    com.bigmoji.discord: DEBUG
+
+
