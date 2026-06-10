@@ -13,7 +13,8 @@ import org.springframework.context.annotation.Configuration;
 public class JdaConfig {
   @Bean
   @Nullable
-  JDA jda(@Value("${bigmoji.discord.token:}") String token, EmojiMessageListener listener) throws InterruptedException {
+  JDA jda(@Value("${bigmoji.discord.token:}") String token, EmojiMessageListener listener)
+      throws InterruptedException {
     if (token == null || token.isBlank()) {
       return null;
     }

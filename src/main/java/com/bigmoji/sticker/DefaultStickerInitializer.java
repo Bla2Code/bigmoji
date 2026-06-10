@@ -35,27 +35,29 @@ public class DefaultStickerInitializer {
 
   @Transactional
   public void initializeForGuildIfMissing(String guildId) {
-    if (!repository.existsByGuildId(guildId)) {
-      for (DefaultSticker def : DEFAULTS) {
-        try {
-          String bucketName = storageService.bucketForGuild(guildId);
-          Resource resource =
-              resourceLoader.getResource("classpath:default-stickers/" + def.fileName());
-          long size = resource.contentLength();
-          String objectKey;
-          try (InputStream is = resource.getInputStream()) {
-            objectKey = storageService.upload(guildId, ".png", is, size, "image/png");
-          }
-          StickerMapping mapping = new StickerMapping();
-          mapping.setGuildId(guildId);
-          mapping.setEmojiName(def.emojiName());
-          mapping.setMinioBucketName(bucketName);
-          mapping.setMinioObjectKey(objectKey);
-          mapping.setDefault(true);
-          repository.save(mapping);
-        } catch (Exception e) {
-          throw new RuntimeException("Failed to initialize default sticker: " + def.fileName(), e);
+    for (DefaultSticker def : DEFAULTS) {
+      if (!repository.findByGuildIdAndEmojiName(guildId, def.shortcodeName()).isEmpty()) {
+        continue;
+      }
+
+      try {
+        String bucketName = storageService.bucketForGuild(guildId);
+        Resource resource =
+            resourceLoader.getResource("classpath:default-stickers/" + def.fileName());
+        long size = resource.contentLength();
+        String objectKey;
+        try (InputStream is = resource.getInputStream()) {
+          objectKey = storageService.upload(guildId, ".png", is, size, "image/png");
         }
+        StickerMapping mapping = new StickerMapping();
+        mapping.setGuildId(guildId);
+        mapping.setEmojiName(def.shortcodeName());
+        mapping.setMinioBucketName(bucketName);
+        mapping.setMinioObjectKey(objectKey);
+        mapping.setDefault(true);
+        repository.save(mapping);
+      } catch (Exception e) {
+        throw new RuntimeException("Failed to initialize default sticker: " + def.fileName(), e);
       }
     }
   }

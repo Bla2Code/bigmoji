@@ -90,21 +90,59 @@ class EmojiMessageListenerTest {
     StickerMapping mapping = new StickerMapping();
     mapping.setMinioBucketName("b");
     mapping.setMinioObjectKey("o");
+    mapping.setDefault(true);
 
     when(event.getAuthor()).thenReturn(user);
     when(user.isBot()).thenReturn(false);
     when(event.getMessage()).thenReturn(message);
     when(message.getContentRaw()).thenReturn("😊");
     when(detector.isSingleEmojiMessage("😊")).thenReturn(true);
-    when(detector.normalize("😊")).thenReturn("😊");
+    when(detector.normalize("😊")).thenReturn("smile");
+    when(event.isFromGuild()).thenReturn(true);
     when(event.getGuild()).thenReturn(guild);
     when(guild.getId()).thenReturn("1");
-    when(mappingService.pickRandomMapping("1", "😊")).thenReturn(Optional.of(mapping));
+    when(mappingService.pickRandomMapping("1", "smile")).thenReturn(Optional.of(mapping));
     when(storage.presignedGetUrl("b", "o")).thenReturn("http://example");
     when(event.getChannel()).thenReturn(channel);
     when(channel.getId()).thenReturn("ch-2");
 
     listener.onMessageReceived(event);
+
     verify(sender).send(channel, "http://example");
+    verify(mappingService).pickRandomMapping("1", "smile");
+  }
+
+  @Test
+  void skipsReplacementWhenMappingMissing() {
+    EmojiDetector detector = mock(EmojiDetector.class);
+    StickerMappingService mappingService = mock(StickerMappingService.class);
+    StickerSenderService sender = mock(StickerSenderService.class);
+    MinioStorageService storage = mock(MinioStorageService.class);
+    EmojiMessageListener listener =
+        new EmojiMessageListener(detector, mappingService, sender, storage);
+
+    MessageReceivedEvent event = mock(MessageReceivedEvent.class);
+    Message message = mock(Message.class);
+    User user = mock(User.class);
+    Guild guild = mock(Guild.class);
+    MessageChannelUnion channel = mock(MessageChannelUnion.class);
+
+    when(event.getAuthor()).thenReturn(user);
+    when(user.isBot()).thenReturn(false);
+    when(event.getMessage()).thenReturn(message);
+    when(message.getContentRaw()).thenReturn(":party:");
+    when(detector.isSingleEmojiMessage(":party:")).thenReturn(true);
+    when(detector.normalize(":party:")).thenReturn("party");
+    when(event.isFromGuild()).thenReturn(true);
+    when(event.getGuild()).thenReturn(guild);
+    when(guild.getId()).thenReturn("guild-1");
+    when(event.getChannel()).thenReturn(channel);
+    when(channel.getId()).thenReturn("ch-3");
+    when(mappingService.pickRandomMapping("guild-1", "party")).thenReturn(Optional.empty());
+
+    listener.onMessageReceived(event);
+
+    verify(mappingService).pickRandomMapping("guild-1", "party");
+    verifyNoInteractions(sender, storage);
   }
 }

@@ -40,7 +40,7 @@ tasks.test {
 
 spotless {
     java {
-        googleJavaFormat()
+        googleJavaFormat("1.28.0")
         target("src/**/*.java")
     }
 }
