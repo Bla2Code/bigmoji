@@ -8,11 +8,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class StickerMappingService {
+  private static final Logger log = LoggerFactory.getLogger(StickerMappingService.class);
+
   private final StickerMappingRepository repository;
   private final StickerMappingCache cache;
   private final MinioStorageService storage;
@@ -31,10 +35,21 @@ public class StickerMappingService {
   }
 
   public Optional<StickerMapping> pickRandomMapping(String guildId, String emojiName) {
-    ensureDefaults(guildId);
+    ensureDefaults(guildId, emojiName);
     List<StickerMapping> mappings = cache.find(guildId, emojiName);
-    if (mappings.isEmpty()) return Optional.empty();
-    return Optional.of(mappings.get(random.nextInt(mappings.size())));
+    if (mappings.isEmpty()) {
+      log.debug("Sticker mapping lookup miss: guildId={}, normalizedEmoji={}", guildId, emojiName);
+      return Optional.empty();
+    }
+
+    StickerMapping selected = mappings.get(random.nextInt(mappings.size()));
+    log.debug(
+        "Sticker mapping lookup hit: guildId={}, normalizedEmoji={}, mappingCount={}, selectedObjectKey={}",
+        guildId,
+        emojiName,
+        mappings.size(),
+        selected.getMinioObjectKey());
+    return Optional.of(selected);
   }
 
   public StickerMapping create(
@@ -74,7 +89,8 @@ public class StickerMappingService {
     return name.substring(name.lastIndexOf('.'));
   }
 
-  private void ensureDefaults(String guildId) {
+  private void ensureDefaults(String guildId, String normalizedEmoji) {
     defaultInitializer.ifPresent(initializer -> initializer.initializeForGuildIfMissing(guildId));
+    cache.refreshGuildEmoji(guildId, normalizedEmoji);
   }
 }

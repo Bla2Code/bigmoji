@@ -19,4 +19,12 @@ class EmojiDetectorTest {
     assertFalse(detector.isSingleEmojiMessage("hi 😊"));
     assertFalse(detector.isSingleEmojiMessage("   "));
   }
+
+  @Test
+  void normalizesDefaultEmojiToCanonicalCode() {
+    assertEquals("smile", detector.normalize("😊"));
+    assertEquals("heart", detector.normalize("❤️"));
+    assertEquals("thumbsup", detector.normalize("👍🏻"));
+    assertEquals("party", detector.normalize(":party:"));
+  }
 }
