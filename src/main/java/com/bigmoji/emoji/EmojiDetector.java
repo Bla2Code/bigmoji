@@ -11,7 +11,7 @@ public class EmojiDetector {
 
   public boolean isSingleEmojiMessage(String content) {
     if (content == null) return false;
-    String trimmed = content.trim();
+    var trimmed = content.trim();
     if (trimmed.isEmpty()) return false;
     if (SHORTCODE.matcher(trimmed).matches()) return true;
     int codePoints = trimmed.codePointCount(0, trimmed.length());
