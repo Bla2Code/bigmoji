@@ -2,123 +2,129 @@
 
 **Input**: Design documents from `specs/005-fix-sticker-delivery/`
 
-**Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, quickstart.md
 
-**Tests**: Tests are included per the constitution requirement (80%+ coverage, critical paths 100%).
+**Tests**: Tests are required by the project constitution and by the feature spec for sticker delivery, webhook impersonation, and regression behavior.
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+**Organization**: Tasks are grouped by user story to enable independent implementation and testing.
 
 ## Format: `[ID] [P?] [Story] Description`
 
-- **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
-- Include exact file paths in descriptions
-
-## Path Conventions
-
-- **Single project**: `src/`, `tests/` at repository root
-- Paths follow existing project structure: `src/main/java/com/bigmoji/`, `src/test/java/com/bigmoji/`
+- **[P]**: Can run in parallel (different files, no dependency on an incomplete task)
+- **[Story]**: User story label for story-scoped tasks only
+- Every task includes an exact repository path
 
 ---
 
-## Phase 1: Setup (Shared Infrastructure)
+## Phase 1: Setup
 
-**Purpose**: No new project setup needed — existing Spring Boot project is already configured.
+**Purpose**: Confirm the feature branch, inputs, and existing baseline before implementation.
 
-- [x] T001 Verify current branch is `feature/005-fix-sticker-delivery` and all existing tests pass: `./gradlew test`
-
----
-
-## Phase 2: Foundational (Blocking Prerequisites)
-
-**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
-
-**⚠️ CRITICAL**: No user story work can begin until this phase is complete
-
-- [x] T002 [P] Add `downloadFile(String bucket, String objectKey): byte[]` method to `src/main/java/com/bigmoji/storage/MinioStorageService.java` using `MinioClient.getObject()`
-- [x] T003 [P] Create `WebhookUsernameSanitizer` utility class in `src/main/java/com/bigmoji/discord/WebhookUsernameSanitizer.java` with static method `sanitize(String rawName): String` (remove @/#, truncate to 28 chars, append " БОТ", max 32 total)
-- [x] T004 Create `WebhookStickerSender` service in `src/main/java/com/bigmoji/discord/WebhookStickerSender.java` with `sendAsAuthor()` method per `contracts/webhook-service-contract.md` (depends on T002, T003)
-- [x] T005 Modify `StickerSenderService` in `src/main/java/com/bigmoji/discord/StickerSenderService.java` to accept `byte[]` and `String fileName` and use `channel.sendFiles(FileUpload.fromData(...))` instead of `channel.sendMessage(String)`
-- [x] T006 [P] Write unit tests for `WebhookUsernameSanitizer` in `src/test/java/com/bigmoji/discord/WebhookUsernameSanitizerTest.java`
-- [ ] T007 [P] Write unit tests for `MinioStorageService.downloadFile()` in `src/test/java/com/bigmoji/storage/MinioStorageServiceTest.java`
-
-**Checkpoint**: Foundation ready — user story implementation can now begin
+- [X] T001 Confirm branch `feature/005-fix-sticker-delivery` and review feature artifacts in `specs/005-fix-sticker-delivery/plan.md`
+- [X] T002 [P] Review nickname and webhook requirements in `specs/005-fix-sticker-delivery/spec.md`
+- [X] T003 [P] Review webhook service contract examples in `specs/005-fix-sticker-delivery/contracts/webhook-service-contract.md`
 
 ---
 
-## Phase 3: User Story 1 - Send sticker as image file instead of URL (Priority: P1) 🎯 MVP
+## Phase 2: Foundational
 
-**Goal**: Stickers are sent as actual image file attachments via Discord's `sendFiles()` API, not as raw Minio presigned URLs.
+**Purpose**: Shared delivery utilities required before user-story implementation.
 
-**Independent Test**: Send a message with a supported emoji and verify that the bot responds with an actual image file attachment, not a URL string.
+**Critical**: Complete this phase before starting any user story implementation.
+
+- [X] T004 [P] Add or verify `downloadFile(String bucket, String objectKey): byte[]` in `src/main/java/com/bigmoji/storage/MinioStorageService.java`
+- [X] T005 [P] Add or verify file attachment sending with `FileUpload.fromData(...)` in `src/main/java/com/bigmoji/discord/StickerSenderService.java`
+- [X] T006 [P] Add or verify `WebhookUsernameSanitizer.sanitize(String rawName)` in `src/main/java/com/bigmoji/discord/WebhookUsernameSanitizer.java`
+- [ ] T007 [P] Add unit coverage for Minio file downloads in `src/test/java/com/bigmoji/storage/MinioStorageServiceTest.java`
+- [ ] T008 [P] Add unit coverage for direct sticker file sending in `src/test/java/com/bigmoji/discord/StickerSenderServiceTest.java`
+
+**Checkpoint**: Sticker bytes can be downloaded and sent as file attachments independently of listener wiring.
+
+---
+
+## Phase 3: User Story 1 - Send Sticker as Image File Instead of URL (Priority: P1)
+
+**Goal**: Supported emoji replacement sends a Discord file attachment, not a Minio URL string.
+
+**Independent Test**: Send a supported emoji and verify the bot responds with an image file attachment in the same channel.
 
 ### Tests for User Story 1
 
-- [ ] T008 [P] [US1] Write unit test for `StickerSenderService.send()` with file bytes in `src/test/java/com/bigmoji/discord/StickerSenderServiceTest.java`
-- [ ] T009 [P] [US1] Write unit test for `EmojiMessageListener` verifying `sendFiles()` is called instead of `sendMessage()` in `src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java`
+- [ ] T009 [P] [US1] Add listener test for successful custom sticker byte download in `src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java`
+- [ ] T010 [P] [US1] Add listener test proving no URL text message is sent for mapped stickers in `src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java`
+- [ ] T011 [P] [US1] Add listener test for Minio download failure logging and no crash in `src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java`
+- [ ] T012 [P] [US1] Add listener test for sticker payloads larger than Discord's 8MB limit in `src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java`
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Modify `EmojiMessageListener.onMessageReceived()` in `src/main/java/com/bigmoji/discord/EmojiMessageListener.java` to: (1) download sticker bytes via `storageService.downloadFile()`, (2) pass bytes + filename to `senderService.send()`, (3) remove presigned URL logic
-- [ ] T011 [US1] Update `StickerSenderService.send()` signature and implementation in `src/main/java/com/bigmoji/discord/StickerSenderService.java` to use `channel.sendFiles(FileUpload.fromData(bytes, fileName))`
-- [ ] T012 [US1] Add error handling for Minio download failures in `EmojiMessageListener` — log error, skip send, do not crash (FR-007)
-- [ ] T013 [US1] Add file size validation — skip send and log warning if sticker exceeds 8MB Discord limit
+- [ ] T013 [US1] Update `EmojiMessageListener.onMessageReceived()` to download sticker bytes before delivery in `src/main/java/com/bigmoji/discord/EmojiMessageListener.java`
+- [ ] T014 [US1] Update `EmojiMessageListener.onMessageReceived()` to pass `byte[]` and filename to sticker senders in `src/main/java/com/bigmoji/discord/EmojiMessageListener.java`
+- [ ] T015 [US1] Add graceful Minio download failure handling in `src/main/java/com/bigmoji/discord/EmojiMessageListener.java`
+- [ ] T016 [US1] Add or verify 8MB Discord file size validation in `src/main/java/com/bigmoji/discord/WebhookStickerSender.java`
 
-**Checkpoint**: At this point, User Story 1 should be fully functional — stickers arrive as image files, not URLs
+**Checkpoint**: User Story 1 is independently functional: stickers arrive as image attachments and URL delivery is gone.
 
 ---
 
-## Phase 4: User Story 2 - Send sticker as the original message author with "БОТ" suffix (Priority: P2)
+## Phase 4: User Story 2 - Send Sticker as Original Author with Discord Bot Badge (Priority: P2)
 
-**Goal**: Sticker responses appear under the original message author's name with "БОТ" suffix via Discord webhooks, with fallback to bot name on failure.
+**Goal**: Sticker responses use webhook delivery with the original guild display name, original avatar, and Discord's standard bot badge only.
 
-**Independent Test**: Send a message with a supported emoji as user "Alice" and verify the sticker appears from "Alice БОТ" via webhook.
+**Independent Test**: Send a supported emoji as a member with visible nickname `Ne_Tort` and verify the sticker appears as username `Ne_Tort` plus Discord's standard bot badge.
 
 ### Tests for User Story 2
 
-- [ ] T014 [P] [US2] Write unit tests for `WebhookStickerSender` in `src/test/java/com/bigmoji/discord/WebhookStickerSenderTest.java` covering: success path, webhook creation, cache invalidation, fallback to bot name
-- [ ] T015 [P] [US2] Write integration test for webhook send flow in `src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java` (extend existing tests)
+- [ ] T017 [P] [US2] Add webhook sender success-path unit test in `src/test/java/com/bigmoji/discord/WebhookStickerSenderTest.java`
+- [ ] T018 [P] [US2] Add webhook sender permission/fallback unit test in `src/test/java/com/bigmoji/discord/WebhookStickerSenderTest.java`
+- [ ] T019 [P] [US2] Add webhook cache invalidation unit test in `src/test/java/com/bigmoji/discord/WebhookStickerSenderTest.java`
+- [X] T020 [P] [US2] Add sanitizer regression tests for `Ne_Tort`, removing textual `БОТ`, `@/#`, blank, and long names in `src/test/java/com/bigmoji/discord/WebhookUsernameSanitizerTest.java`
+- [X] T021 [P] [US2] Add listener regression test proving guild `Member#getEffectiveName()` is passed as webhook author name in `src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java`
+- [X] T022 [P] [US2] Add listener fallback test for unavailable member context using `User#getName()` in `src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java`
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] Implement `WebhookStickerSender.sendAsAuthor()` in `src/main/java/com/bigmoji/discord/WebhookStickerSender.java` per `contracts/webhook-service-contract.md` — webhook lookup/creation, cache, send via `webhook.sendFiles()`
-- [ ] T017 [US2] Implement webhook cache (`ConcurrentHashMap<String, Webhook>`) with lazy creation and invalidation on failure in `WebhookStickerSender`
-- [ ] T018 [US2] Implement fallback logic — if webhook creation/execution fails, log warning and call `channel.sendFiles()` under bot's own name
-- [ ] T019 [US2] Integrate `WebhookStickerSender` into `EmojiMessageListener.onMessageReceived()` — after downloading sticker bytes, attempt webhook send before falling back to direct send
-- [ ] T020 [US2] Add diagnostic logging for webhook success/fallback paths in `EmojiMessageListener`
+- [X] T023 [US2] Implement webhook lookup, creation, send, and cache handling in `src/main/java/com/bigmoji/discord/WebhookStickerSender.java`
+- [X] T024 [US2] Update `EmojiMessageListener.onMessageReceived()` to resolve author name from `event.getMember().getEffectiveName()` for guild messages in `src/main/java/com/bigmoji/discord/EmojiMessageListener.java`
+- [X] T025 [US2] Update `EmojiMessageListener.onMessageReceived()` to fall back to `event.getAuthor().getName()` only when member context is unavailable in `src/main/java/com/bigmoji/discord/EmojiMessageListener.java`
+- [X] T026 [US2] Update `WebhookUsernameSanitizer` to preserve allowed casing and underscores while removing only Discord-disallowed `@` and `#` in `src/main/java/com/bigmoji/discord/WebhookUsernameSanitizer.java`
+- [X] T027 [US2] Update `WebhookUsernameSanitizer` to remove textual `БОТ` and keep final usernames within 32 characters in `src/main/java/com/bigmoji/discord/WebhookUsernameSanitizer.java`
+- [X] T028 [US2] Add webhook success and fallback diagnostic logging in `src/main/java/com/bigmoji/discord/WebhookStickerSender.java`
 
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently — stickers arrive as images under author name with "БОТ" suffix
+**Checkpoint**: User Story 2 is independently functional: `Ne_Tort` appears as username `Ne_Tort` with Discord's standard bot badge, not `Ne_Tort БОТ` plus the badge.
 
 ---
 
-## Phase 5: User Story 3 - Preserve existing behavior for non-target messages (Priority: P3)
+## Phase 5: User Story 3 - Preserve Existing Behavior for Non-Target Messages (Priority: P3)
 
-**Goal**: Listener keeps existing behavior for unsupported inputs while fixing sticker delivery and name replacement.
+**Goal**: Unsupported inputs and skipped listener flows remain unchanged while delivery and nickname behavior are fixed.
 
-**Independent Test**: Re-run current listener regression checks for supported and unsupported message inputs and confirm no unrelated behavior changes.
+**Independent Test**: Existing listener regression scenarios still pass for bot authors, DMs, non-emoji messages, multi-emoji messages, and unmapped emoji.
 
 ### Tests for User Story 3
 
-- [ ] T021 [P] [US3] Run existing `EmojiMessageListenerTest` and verify all current tests still pass
-- [ ] T022 [P] [US3] Add regression test: bot messages are still skipped, non-emoji messages are still ignored, DM messages are still skipped
+- [ ] T029 [P] [US3] Add or verify bot-author skip regression in `src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java`
+- [ ] T030 [P] [US3] Add or verify DM skip regression in `src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java`
+- [ ] T031 [P] [US3] Add or verify non-emoji and multi-emoji skip regressions in `src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java`
+- [ ] T032 [P] [US3] Add or verify unmapped emoji no-send regression in `src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java`
 
 ### Implementation for User Story 3
 
-- [ ] T023 [US3] Verify existing guard clauses in `EmojiMessageListener.onMessageReceived()` are preserved (bot check, single-emoji check, guild check)
-- [ ] T024 [US3] Verify original message deletion (`message.delete().queue()`) still occurs after successful sticker delivery
+- [ ] T033 [US3] Preserve listener guard clauses for bot authors, non-single-emoji content, and DMs in `src/main/java/com/bigmoji/discord/EmojiMessageListener.java`
+- [ ] T034 [US3] Verify original emoji messages are deleted only after successful sticker delivery in `src/main/java/com/bigmoji/discord/EmojiMessageListener.java`
 
-**Checkpoint**: All user stories should now be independently functional with no regressions
+**Checkpoint**: User Story 3 confirms no unrelated listener behavior changes.
 
 ---
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-**Purpose**: Improvements that affect multiple user stories
+**Purpose**: Align docs and run verification after all selected user stories are implemented.
 
-- [ ] T025 [P] Update `src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java` to cover all new code paths (webhook success, webhook fallback, download failure, file too large)
-- [ ] T026 Run full test suite: `./gradlew test` — verify all tests pass
-- [ ] T027 Run quickstart.md validation flow (manual Discord test with emoji message)
-- [ ] T028 [P] Code cleanup — remove unused presigned URL logic from `EmojiMessageListener` if no longer needed elsewhere
+- [X] T035 [P] Update manual validation notes for nickname preservation in `specs/005-fix-sticker-delivery/quickstart.md`
+- [X] T036 [P] Ensure webhook username examples remain aligned in `specs/005-fix-sticker-delivery/contracts/webhook-service-contract.md`
+- [X] T037 Run targeted Discord tests with `./gradlew test --tests "com.bigmoji.discord.*"` and record outcome in `specs/005-fix-sticker-delivery/quickstart.md`
+- [X] T038 Run full test suite with `./gradlew test` and record outcome in `specs/005-fix-sticker-delivery/quickstart.md`
+- [X] T039 Run formatter with `./gradlew spotlessApply` before handoff for source files under `src/main/java/com/bigmoji/`
 
 ---
 
@@ -126,79 +132,54 @@
 
 ### Phase Dependencies
 
-- **Setup (Phase 1)**: No dependencies — can start immediately
-- **Foundational (Phase 2)**: Depends on Setup completion — BLOCKS all user stories
-- **User Stories (Phase 3+)**: All depend on Foundational phase completion
-  - User stories can then proceed in parallel (if staffed)
-  - Or sequentially in priority order (P1 → P2 → P3)
-- **Polish (Phase 6)**: Depends on all desired user stories being complete
+- **Setup (Phase 1)**: No dependencies.
+- **Foundational (Phase 2)**: Depends on Setup; blocks all user stories.
+- **User Story 1 (Phase 3)**: Depends on Foundational.
+- **User Story 2 (Phase 4)**: Depends on Foundational and can be validated independently, but complete end-to-end replacement benefits from US1 file delivery.
+- **User Story 3 (Phase 5)**: Depends on Foundational; should be run after US1/US2 changes to catch regressions.
+- **Polish (Phase 6)**: Depends on selected user stories.
 
 ### User Story Dependencies
 
-- **User Story 1 (P1)**: Can start after Foundational (Phase 2) — No dependencies on other stories
-- **User Story 2 (P2)**: Can start after Foundational (Phase 2) — Builds on US1's file download, adds webhook layer
-- **User Story 3 (P3)**: Can start after Foundational (Phase 2) — Regression verification, no new code dependencies
-
-### Within Each User Story
-
-- Tests MUST be written and FAIL before implementation
-- Models/utilities before services
-- Services before listener integration
-- Core implementation before integration
-- Story complete before moving to next priority
+- **US1 (P1)**: MVP path for image attachment delivery.
+- **US2 (P2)**: Webhook impersonation and nickname preservation; uses shared file delivery utilities.
+- **US3 (P3)**: Regression preservation; validates unchanged skip behavior.
 
 ### Parallel Opportunities
 
-- T002, T003, T006, T007 can run in parallel (different files, no dependencies)
-- T008, T009 can run in parallel (different test files)
-- T014, T015 can run in parallel (different test files)
-- T021, T022 can run in parallel (regression tests)
-- T025, T028 can run in parallel (polish tasks)
+- T002 and T003 can run in parallel.
+- T004 through T008 can run in parallel after setup.
+- T009 through T012 can run in parallel before US1 implementation.
+- T017 through T022 can run in parallel before US2 implementation.
+- T029 through T032 can run in parallel before US3 verification.
+- T035 and T036 can run in parallel during polish.
 
 ---
 
-## Parallel Example: Foundational Phase
+## Parallel Example: User Story 2
 
-```bash
-# Launch all independent foundational tasks together:
-Task: "Add downloadFile() to MinioStorageService" (T002)
-Task: "Create WebhookUsernameSanitizer" (T003)
-Task: "Write WebhookUsernameSanitizer tests" (T006)
-Task: "Write MinioStorageService.downloadFile tests" (T007)
-
-# Then (after T002, T003 complete):
-Task: "Create WebhookStickerSender service" (T004)
-Task: "Modify StickerSenderService to send files" (T005)
+```text
+Task: "T017 [US2] Add webhook sender success-path unit test in src/test/java/com/bigmoji/discord/WebhookStickerSenderTest.java"
+Task: "T020 [US2] Add sanitizer regression tests for Ne_Tort, removing textual БОТ, @/#, blank, and long names in src/test/java/com/bigmoji/discord/WebhookUsernameSanitizerTest.java"
+Task: "T021 [US2] Add listener regression test proving guild Member#getEffectiveName() is passed as webhook author name in src/test/java/com/bigmoji/discord/EmojiMessageListenerTest.java"
 ```
 
 ---
 
 ## Implementation Strategy
 
-### MVP First (User Story 1 Only)
+### MVP First
 
-1. Complete Phase 1: Setup (T001)
-2. Complete Phase 2: Foundational — T002, T003, T005, T006, T007 (skip T004 webhook for MVP)
-3. Complete Phase 3: User Story 1 (T008-T013)
-4. **STOP and VALIDATE**: Send emoji in Discord, verify image file arrives (not URL)
-5. Deploy/demo if ready
+1. Complete Phase 1 and Phase 2.
+2. Complete User Story 1 to restore image attachment delivery.
+3. Validate with targeted listener and sender tests.
 
 ### Incremental Delivery
 
-1. Complete Setup + Foundational → Foundation ready
-2. Add User Story 1 → Test independently → Deploy/Demo (MVP: stickers as images!)
-3. Add User Story 2 → Test independently → Deploy/Demo (webhook impersonation)
-4. Add User Story 3 → Regression verification → Deploy/Demo
-5. Each story adds value without breaking previous stories
+1. Add User Story 2 to preserve original guild display names and webhook identity.
+2. Add User Story 3 regression checks before handoff.
+3. Run polish verification and update quickstart with test outcomes.
 
----
+### Suggested Scope for Current Bug
 
-## Notes
-
-- [P] tasks = different files, no dependencies
-- [Story] label maps task to specific user story for traceability
-- Each user story should be independently completable and testable
-- Verify tests fail before implementing
-- Commit after each task or logical group
-- Stop at any checkpoint to validate story independently
-- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
+For the reported nickname issue, prioritize T020 through T027, then run T037. This covers `Ne_Tort -> Ne_Tort` with Discord's standard bot badge and prevents textual `БОТ` duplication.

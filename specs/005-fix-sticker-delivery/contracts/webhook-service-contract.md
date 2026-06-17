@@ -10,7 +10,7 @@ public interface WebhookStickerSender {
      * @param channel       the target Discord channel
      * @param stickerBytes  the sticker file data
      * @param fileName      the filename for the attachment (e.g., "sticker.png")
-     * @param authorName    the original message author's display name
+     * @param authorName    the original message author's guild display name
      * @param authorAvatarUrl the original message author's avatar URL
      * @return true if sent via webhook, false if fell back to bot name
      */
@@ -32,7 +32,7 @@ public interface WebhookStickerSender {
 2. **When** `sendAsAuthor()` is called
 3. **Then** the service:
    - Looks up or creates a webhook for the channel
-   - Sanitizes the author name (remove `@`/`#`, truncate to 28 chars, append " БОТ")
+   - Sanitizes the author name (remove `@`/`#`, preserve allowed casing/underscores, remove textual " БОТ" if present, truncate as needed)
    - Sends the file via `webhook.sendFiles()` with the sanitized username and avatar URL
    - Returns `true`
 
@@ -64,11 +64,13 @@ public interface WebhookStickerSender {
 
 | Input | Output |
 |-------|--------|
-| `"Alice"` | `"Alice БОТ"` |
-| `"@lice#123"` | `"lice123 БОТ"` |
-| `"A".repeat(50)` | `"AAAAAAAAAAAAAAAAAAAAAAAAAAAA БОТ"` (28 A's + " БОТ" = 32 chars) |
-| `""` | `"БОТ"` |
-| `"  "` | `"БОТ"` |
+| `"Alice"` | `"Alice"` |
+| `"Ne_Tort"` | `"Ne_Tort"` |
+| `"@lice#123"` | `"lice123"` |
+| `"Ne_Tort БОТ"` | `"Ne_Tort"` |
+| `"A".repeat(50)` | `"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"` (32 A's) |
+| `""` | `"Bigmoji"` |
+| `"  "` | `"Bigmoji"` |
 
 ## Error Handling
 

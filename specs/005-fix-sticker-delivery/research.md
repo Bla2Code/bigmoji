@@ -45,16 +45,16 @@
 
 ## R-004: Username Sanitization for Discord Webhooks
 
-**Decision**: Sanitize webhook usernames by: (1) removing `@` and `#` characters, (2) truncating to 32 characters total including the " БОТ" suffix, (3) trimming whitespace.
+**Decision**: Use the guild member effective display name as the webhook base name, then sanitize webhook usernames by: (1) removing `@` and `#` characters, (2) preserving allowed casing and underscores, (3) removing any textual " БОТ" suffix, (4) truncating to 32 characters total, and (5) trimming whitespace.
 
-**Rationale**: Discord webhook usernames have strict rules: max 32 characters, cannot contain `@` or `#` (to prevent mention abuse). The " БОТ" suffix is 4 characters (space + 3 Cyrillic chars), leaving 28 characters for the author name.
+**Rationale**: Discord webhook usernames have strict rules: max 32 characters, cannot contain `@` or `#` (to prevent mention abuse). Discord already renders a standard bot badge next to webhook messages, so adding textual "БОТ" to the username creates duplicate bot labeling. Using the guild member effective display name preserves the nickname users see in Discord, e.g. `Ne_Tort` plus the standard badge.
 
 **Alternatives considered**:
 - Reject messages with invalid names — poor UX, users can't control their Discord names. Rejected.
-- Use a fixed fallback name like "Пользователь БОТ" — loses author identity. Rejected.
+- Use a fixed fallback name like "Пользователь" — loses author identity. Rejected.
 - Truncate + sanitize — preserves author identity while complying with Discord rules. Chosen.
 
-**Implementation note**: The sanitization function should be a pure utility method, easily testable. Example: `"@lice#123456789012345678901234567890"` → `"lice123456789012345678901234 БОТ"` (28 chars of name + " БОТ" = 32 chars total).
+**Implementation note**: The sanitization function should be a pure utility method, easily testable. Example: `"@lice#123456789012345678901234567890"` → `"lice12345678901234567890123456"` (32 chars total).
 
 ---
 

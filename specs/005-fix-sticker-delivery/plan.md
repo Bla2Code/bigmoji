@@ -1,12 +1,12 @@
 # Implementation Plan: Fix Sticker Delivery and Bot Name Replacement
 
-**Branch**: `feature/005-fix-sticker-delivery` | **Date**: 2026-06-10 | **Spec**: [spec.md](spec.md)
+**Branch**: `feature/005-fix-sticker-delivery` | **Date**: 2026-06-17 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `specs/005-fix-sticker-delivery/spec.md`
 
 ## Summary
 
-Fix two critical bugs in the emoji-to-sticker replacement flow: (1) stickers are sent as raw Minio presigned URLs instead of image file attachments, and (2) stickers are sent under the bot's own name instead of impersonating the original message author with a "БОТ" suffix via Discord webhooks.
+Fix two critical bugs in the emoji-to-sticker replacement flow: (1) stickers are sent as raw Minio presigned URLs instead of image file attachments, and (2) stickers must appear under the original guild display name with Discord's standard bot badge via Discord webhooks. The author-name fix must preserve visible nicknames such as `Ne_Tort`, not derive webhook usernames from normalized account names or append textual `БОТ`.
 
 ## Technical Context
 
@@ -31,6 +31,8 @@ Fix two critical bugs in the emoji-to-sticker replacement flow: (1) stickers are
 - Bot requires `MANAGE_WEBHOOKS` permission for webhook-based impersonation
 - Sticker files MUST be within Discord's 8MB file size limit
 - Webhook usernames MUST be max 32 characters, no `@` or `#`
+- Webhook usernames MUST use `event.getMember().getEffectiveName()` for guild messages, falling back to `event.getAuthor().getName()` only when member context is unavailable
+- Webhook usernames MUST preserve allowed display-name casing and underscores and MUST NOT append textual `БОТ`
 - Must fall back to bot name if webhook creation fails
 - Minio presigned URLs expire after 300 seconds
 
@@ -93,7 +95,7 @@ Research outcomes are documented in [research.md](research.md) and resolve:
 - JDA 5.x file attachment API (`sendFiles()` vs `sendMessage()`)
 - Minio file download approach (presigned URL + OkHttp vs MinioClient.getObject)
 - Discord webhook lifecycle management (create vs reuse vs cache)
-- Username sanitization rules for Discord webhooks
+- Username source and sanitization rules for Discord webhooks, including guild display name precedence and avoiding textual `БОТ` because Discord renders the standard bot badge
 
 ## Phase 1: Design & Contracts
 

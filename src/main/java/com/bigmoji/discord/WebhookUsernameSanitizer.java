@@ -10,14 +10,14 @@ package com.bigmoji.discord;
  *   <li>Not contain {@code @} or {@code #} characters
  * </ul>
  *
- * <p>This utility appends a " БОТ" suffix to indicate the message is bot-generated, leaving 28
- * characters for the original author name.
+ * <p>Discord renders the standard bot badge separately, so this utility must not add a textual
+ * "БОТ" marker to the webhook username.
  */
 public final class WebhookUsernameSanitizer {
 
-  private static final String BOT_SUFFIX = " БОТ";
+  private static final String BOT_SUFFIX_TEXT = " БОТ";
+  private static final String FALLBACK_USERNAME = "Bigmoji";
   private static final int MAX_USERNAME_LENGTH = 32;
-  private static final int MAX_NAME_LENGTH = MAX_USERNAME_LENGTH - BOT_SUFFIX.length(); // 28
 
   private WebhookUsernameSanitizer() {}
 
@@ -29,28 +29,37 @@ public final class WebhookUsernameSanitizer {
    * <ol>
    *   <li>Remove {@code @} and {@code #} characters
    *   <li>Trim leading/trailing whitespace
-   *   <li>Truncate to {@value #MAX_NAME_LENGTH} characters
-   *   <li>Append {@value #BOT_SUFFIX}
+   *   <li>Remove an existing textual " БОТ" suffix, if present
+   *   <li>Truncate to {@value #MAX_USERNAME_LENGTH} characters
    * </ol>
    *
-   * @param rawName the original author display name
-   * @return sanitized username with " БОТ" suffix, max 32 characters
+   * @param rawName the original author guild display name
+   * @return sanitized username, max 32 characters, without a textual bot suffix
    */
   public static String sanitize(String rawName) {
     if (rawName == null || rawName.isBlank()) {
-      return BOT_SUFFIX.trim();
+      return FALLBACK_USERNAME;
     }
 
     String cleaned = rawName.replace("@", "").replace("#", "").trim();
 
     if (cleaned.isEmpty()) {
-      return BOT_SUFFIX.trim();
+      return FALLBACK_USERNAME;
     }
 
-    if (cleaned.length() > MAX_NAME_LENGTH) {
-      cleaned = cleaned.substring(0, MAX_NAME_LENGTH);
+    String baseName = cleaned;
+    if (baseName.endsWith(BOT_SUFFIX_TEXT)) {
+      baseName = baseName.substring(0, baseName.length() - BOT_SUFFIX_TEXT.length()).trim();
     }
 
-    return cleaned + BOT_SUFFIX;
+    if (baseName.isEmpty()) {
+      return FALLBACK_USERNAME;
+    }
+
+    if (baseName.length() > MAX_USERNAME_LENGTH) {
+      baseName = baseName.substring(0, MAX_USERNAME_LENGTH);
+    }
+
+    return baseName;
   }
 }

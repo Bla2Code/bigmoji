@@ -8,22 +8,22 @@ class WebhookUsernameSanitizerTest {
 
   @Test
   void sanitizesNormalName() {
-    assertEquals("Alice БОТ", WebhookUsernameSanitizer.sanitize("Alice"));
+    assertEquals("Alice", WebhookUsernameSanitizer.sanitize("Alice"));
   }
 
   @Test
   void removesAtSign() {
-    assertEquals("lice123 БОТ", WebhookUsernameSanitizer.sanitize("@lice123"));
+    assertEquals("lice123", WebhookUsernameSanitizer.sanitize("@lice123"));
   }
 
   @Test
   void removesHashSign() {
-    assertEquals("alice123 БОТ", WebhookUsernameSanitizer.sanitize("alice#123"));
+    assertEquals("alice123", WebhookUsernameSanitizer.sanitize("alice#123"));
   }
 
   @Test
   void removesBothAtAndHash() {
-    assertEquals("lice123 БОТ", WebhookUsernameSanitizer.sanitize("@lice#123"));
+    assertEquals("lice123", WebhookUsernameSanitizer.sanitize("@lice#123"));
   }
 
   @Test
@@ -31,39 +31,49 @@ class WebhookUsernameSanitizerTest {
     String longName = "A".repeat(50);
     String result = WebhookUsernameSanitizer.sanitize(longName);
     assertEquals(32, result.length());
-    assertEquals("A".repeat(28) + " БОТ", result);
+    assertEquals("A".repeat(32), result);
   }
 
   @Test
-  void handlesExactly28CharName() {
-    String name = "A".repeat(28);
-    assertEquals("A".repeat(28) + " БОТ", WebhookUsernameSanitizer.sanitize(name));
+  void handlesExactly32CharName() {
+    String name = "A".repeat(32);
+    assertEquals("A".repeat(32), WebhookUsernameSanitizer.sanitize(name));
   }
 
   @Test
   void handlesNullName() {
-    assertEquals("БОТ", WebhookUsernameSanitizer.sanitize(null));
+    assertEquals("Bigmoji", WebhookUsernameSanitizer.sanitize(null));
   }
 
   @Test
   void handlesBlankName() {
-    assertEquals("БОТ", WebhookUsernameSanitizer.sanitize(""));
-    assertEquals("БОТ", WebhookUsernameSanitizer.sanitize("   "));
+    assertEquals("Bigmoji", WebhookUsernameSanitizer.sanitize(""));
+    assertEquals("Bigmoji", WebhookUsernameSanitizer.sanitize("   "));
   }
 
   @Test
   void handlesNameThatBecomesEmptyAfterSanitization() {
-    assertEquals("БОТ", WebhookUsernameSanitizer.sanitize("@@@"));
-    assertEquals("БОТ", WebhookUsernameSanitizer.sanitize("###"));
+    assertEquals("Bigmoji", WebhookUsernameSanitizer.sanitize("@@@"));
+    assertEquals("Bigmoji", WebhookUsernameSanitizer.sanitize("###"));
   }
 
   @Test
   void trimsWhitespace() {
-    assertEquals("Alice БОТ", WebhookUsernameSanitizer.sanitize("  Alice  "));
+    assertEquals("Alice", WebhookUsernameSanitizer.sanitize("  Alice  "));
   }
 
   @Test
   void handlesNameWithSpaces() {
-    assertEquals("Alice Bob БОТ", WebhookUsernameSanitizer.sanitize("Alice Bob"));
+    assertEquals("Alice Bob", WebhookUsernameSanitizer.sanitize("Alice Bob"));
+  }
+
+  @Test
+  void preservesGuildNicknameCasingAndUnderscore() {
+    assertEquals("Ne_Tort", WebhookUsernameSanitizer.sanitize("Ne_Tort"));
+  }
+
+  @Test
+  void removesTextualBotSuffix() {
+    assertEquals("Ne_Tort", WebhookUsernameSanitizer.sanitize("Ne_Tort БОТ"));
   }
 }
