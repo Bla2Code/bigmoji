@@ -15,7 +15,7 @@ Send a message in Discord containing a single supported emoji (e.g., 🔥, ❤�
 **Expected outcome**:
 - The original emoji message is deleted
 - A sticker image appears in the channel as a file attachment (not a URL)
-- The sticker appears under the sender's name with "БОТ" suffix (e.g., "Alice БОТ")
+- The sticker appears under the sender's name with Discord's standard bot badge (e.g., username `Alice` plus the `БОТ` badge)
 - The sticker uses the sender's avatar
 
 ### Step 2: Verify fallback behavior
@@ -27,7 +27,16 @@ Remove `MANAGE_WEBHOOKS` permission from the bot in the target channel. Send ano
 - The sticker appears under the bot's own name ("Bigmoji БОТ")
 - A warning is logged about webhook creation failure
 
-### Step 3: Verify non-target messages
+### Step 3: Verify nickname preservation
+
+Set the sender's visible server nickname to `Ne_Tort` and send a single supported emoji.
+
+**Expected outcome**:
+- The sticker appears under username `Ne_Tort` with Discord's standard `БОТ` badge
+- The username is not lowercased or prefixed, e.g. not `.ne_tort`
+- The username does not contain textual `БОТ`
+
+### Step 4: Verify non-target messages
 
 Send a message with:
 - No emoji (plain text)
@@ -39,7 +48,7 @@ Send a message with:
 - No errors in logs
 - Original messages remain untouched
 
-### Step 4: Verify logging
+### Step 5: Verify logging
 
 Check application logs after sending test messages.
 
@@ -47,7 +56,7 @@ Check application logs after sending test messages.
 - `Emoji detection result: ... isSingleEmojiMessage=true`
 - `Mapping lookup result: ... found=true, objectKey=...`
 - `Sticker downloaded: bucket=..., objectKey=..., sizeBytes=...`
-- `Sticker sent via webhook: channel=..., author=... БОТ` (success path)
+- `Sticker sent via webhook: channel=..., author=Ne_Tort` (success path)
 - OR `Webhook failed, falling back to bot name: reason=...` (fallback path)
 
 ## Running Tests
@@ -61,6 +70,16 @@ Check application logs after sending test messages.
 ./gradlew test --tests "com.bigmoji.discord.WebhookStickerSenderTest"
 ./gradlew test --tests "com.bigmoji.storage.MinioStorageServiceTest"
 ```
+
+### Verification Results
+
+- 2026-06-17: `./gradlew test --tests "com.bigmoji.discord.EmojiMessageListenerTest" --tests "com.bigmoji.discord.WebhookUsernameSanitizerTest"` passed.
+- 2026-06-17: `./gradlew test --tests "com.bigmoji.discord.*"` passed.
+- 2026-06-17: `./gradlew test` passed.
+- 2026-06-17: `./gradlew spotlessApply` passed.
+- 2026-06-18: `./gradlew test --tests "com.bigmoji.discord.EmojiMessageListenerTest" --tests "com.bigmoji.discord.WebhookUsernameSanitizerTest"` passed after removing textual `БОТ` from webhook usernames.
+- 2026-06-18: `./gradlew spotlessApply` passed.
+- 2026-06-18: `./gradlew test` passed.
 
 ## Local Development
 

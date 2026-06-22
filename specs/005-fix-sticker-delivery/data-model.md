@@ -36,15 +36,15 @@ Sanitized username for webhook impersonation.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| rawName | String | Original author display name |
-| sanitizedName | String | Sanitized name + " БОТ" suffix, max 32 chars |
+| rawName | String | Original author guild display name |
+| sanitizedName | String | Sanitized name without textual " БОТ", max 32 chars |
 | avatarUrl | String | Author's avatar URL |
 
 **Derivation rules**:
 1. Remove `@` and `#` characters from rawName
 2. Trim whitespace
-3. Truncate to 28 characters (leaving 4 for " БОТ")
-4. Append " БОТ"
+3. If the cleaned name already ends with textual " БОТ", remove that suffix
+4. Truncate the display name as needed to 32 characters
 5. Result max length: 32 characters
 
 ### StickerDeliveryContext (NEW, internal)
@@ -56,7 +56,7 @@ Transient context object passed through the delivery pipeline.
 | channel | MessageChannelUnion | Target Discord channel |
 | stickerBytes | byte[] | Downloaded sticker file data |
 | stickerFileName | String | Filename for the attachment |
-| authorName | String | Original message author's display name |
+| authorName | String | Original message author's guild display name |
 | authorAvatarUrl | String | Original message author's avatar URL |
 | useWebhook | boolean | Whether to attempt webhook impersonation |
 
@@ -89,4 +89,6 @@ Transient context object passed through the delivery pipeline.
 - Sticker file size MUST be ≤ 8MB (Discord limit)
 - Webhook username MUST be ≤ 32 characters after sanitization
 - Webhook username MUST NOT contain `@` or `#`
+- Webhook username MUST preserve allowed display-name casing and underscores
+- Webhook username MUST NOT include textual "БОТ"; Discord provides the standard bot badge separately
 - Minio download MUST complete within 5 seconds (presigned URL validity window)
