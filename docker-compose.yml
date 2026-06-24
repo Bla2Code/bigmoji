@@ -27,3 +27,15 @@ services:
       - minio
     ports:
       - "8080:8080"
+
+  bigmoji-ui:
+    profiles:
+      - ui
+    build:
+      context: ./ui
+    environment:
+      BIGMOJI_BACKEND_URL: http://bigmoji-app:8080
+    depends_on:
+      - bigmoji-app
+    ports:
+      - "3000:80"
