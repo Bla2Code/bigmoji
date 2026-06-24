@@ -1,20 +1,15 @@
 package com.bigmoji.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
 
-import com.bigmoji.domain.repository.StickerMappingRepository;
 import com.bigmoji.sticker.DefaultStickerInitializer;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.DefaultResourceLoader;
 
 class DefaultStickersControllerContractTest {
   @Test
   void returnsDefaults() {
-    DefaultStickerInitializer i =
-        new DefaultStickerInitializer(
-            mock(StickerMappingRepository.class),
-            mock(com.bigmoji.storage.MinioStorageService.class),
-            mock(org.springframework.core.io.ResourceLoader.class));
+    DefaultStickerInitializer i = new DefaultStickerInitializer(new DefaultResourceLoader());
     DefaultStickersController c = new DefaultStickersController(i);
     assertEquals(5, c.defaults().size());
   }

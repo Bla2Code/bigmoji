@@ -6,13 +6,13 @@
 
 ## Summary
 
-Build a Discord bot (Bigmoji) that detects single-emoji messages in Discord channels, deletes them, and posts a matching large sticker image from a per-server configurable collection. The bot is a Spring Boot 4.0.6 application using JDA for Discord integration, PostgreSQL for custom mapping storage, MinIO for custom image storage, and packaged local fallback sticker assets for predefined emojis when no DB mapping exists for the guild+emoji pair.
+Build a Discord bot (Bigmoji) that detects single-emoji messages in Discord channels, deletes them, and posts a matching large sticker image from a per-server configurable collection. The bot is a Spring Boot 4.0.6 application using JDA for Discord integration, Discord OAuth2 for UI/admin login and per-guild authorization, PostgreSQL for custom mapping storage, MinIO for custom image storage, and packaged local fallback sticker assets for predefined emojis when no DB mapping exists for the guild+emoji pair.
 
 ## Technical Context
 
 **Language/Version**: Java 21
 
-**Primary Dependencies**: Spring Boot 4.0.6, JDA (Java Discord API), Hibernate/JPA with Spring Data JPA, MinIO Java SDK, Spring Boot Actuator, SpringDoc OpenAPI 3 (Swagger UI)
+**Primary Dependencies**: Spring Boot 4.0.6, JDA (Java Discord API), Java HttpClient for Discord OAuth2 calls, Hibernate/JPA with Spring Data JPA, MinIO Java SDK, Spring Boot Actuator, SpringDoc OpenAPI 3 (Swagger UI)
 
 **Storage**: PostgreSQL (relational data), MinIO (S3-compatible object storage for sticker images)
 
@@ -35,6 +35,7 @@ Build a Discord bot (Bigmoji) that detects single-emoji messages in Discord chan
 - Memory-loaded mappings for fast lookup on startup
 - Local fallback sticker assets are runtime-only resources and MUST NOT be persisted in PostgreSQL
 - On database lookup failure/timeout, bot MUST skip replacement (no fallback masking operational failures)
+- UI/admin API must use Discord OAuth2 sessions and per-guild authorization; static API keys are not acceptable for user-facing mapping management
 
 **Scale/Scope**: 
 - 100 concurrent Discord servers
@@ -50,7 +51,7 @@ Build a Discord bot (Bigmoji) that detects single-emoji messages in Discord chan
 |-----------|--------|-------|
 | **I. Code Quality - Linting & Formatting** | ✅ PASS | Configure Spotless plugin for Java formatting (google-java-format) |
 | **I. Code Quality - Code Reviews** | ✅ PASS | Standard PR workflow |
-| **I. Code Quality - Simplicity First** | ✅ PASS | YAGNI: No OAuth2 initially, API key only. No Discord sticker API, use attachments. |
+| **I. Code Quality - Simplicity First** | ✅ PASS | Discord OAuth2 is required for UI/admin ownership boundaries; no Spring Security dependency initially, use small MVC interceptor/session layer. No Discord sticker API, use attachments. |
 | **I. Code Quality - Documentation** | ✅ PASS | OpenAPI/Swagger for REST API, Javadoc for public interfaces |
 | **I. Code Quality - Error Handling** | ✅ PASS | Explicit error handling with clear messages, no silent failures |
 | **II. Testing - 80% Coverage** | ✅ PASS | JUnit 5 + Mockito for unit, Testcontainers for integration |
@@ -91,7 +92,7 @@ bigmoji/
 │   │   │   ├── config/
 │   │   │   │   ├── JdaConfig.java
 │   │   │   │   ├── MinioConfig.java
-│   │   │   │   ├── ApiKeyInterceptor.java
+│   │   │   │   ├── AuthSessionInterceptor.java
 │   │   │   │   └── AsyncConfig.java
 │   │   │   ├── discord/
 │   │   │   │   ├── EmojiMessageListener.java
@@ -103,7 +104,13 @@ bigmoji/
 │   │   │   │   ├── StickerMappingService.java
 │   │   │   │   ├── StickerMappingCache.java
 │   │   │   │   └── DefaultStickerInitializer.java (runtime fallback catalog loader; no DB seeding)
+│   │   │   ├── auth/
+│   │   │   │   ├── DiscordOAuthClient.java
+│   │   │   │   ├── SignedCookieSessionService.java
+│   │   │   │   ├── OAuthStateService.java
+│   │   │   │   └── GuildAuthorizationService.java
 │   │   │   ├── api/
+│   │   │   │   ├── AuthController.java
 │   │   │   │   ├── StickerMappingController.java
 │   │   │   │   ├── dto/
 │   │   │   │   │   ├── MappingResponse.java
@@ -155,7 +162,7 @@ bigmoji/
 |-----------|--------|-------|
 | **I. Code Quality - Linting & Formatting** | ✅ PASS | Spotless + google-java-format configured in build.gradle.kts |
 | **I. Code Quality - Code Reviews** | ✅ PASS | Standard PR workflow |
-| **I. Code Quality - Simplicity First** | ✅ PASS | YAGNI applied: API key auth only, attachment-based stickers, ConcurrentHashMap cache, fallback assets from local resources (no default DB bootstrap) |
+| **I. Code Quality - Simplicity First** | ✅ PASS | YAGNI applied: compact Discord OAuth2/session layer instead of broad security framework, attachment-based stickers, ConcurrentHashMap cache, fallback assets from local resources (no default DB bootstrap) |
 | **I. Code Quality - Documentation** | ✅ PASS | OpenAPI/Swagger auto-generated, Javadoc for public interfaces, API contract documented |
 | **I. Code Quality - Error Handling** | ✅ PASS | GlobalExceptionHandler with consistent error format, no silent failures |
 | **II. Testing - 80% Coverage** | ✅ PASS | Unit tests per service, integration tests with Testcontainers (PostgreSQL + MinIO) |

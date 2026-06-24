@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "project Bigmoji - Discord bot that replaces emojis with large stickers. Backend-only application with REST API for UI integration. WHAT: Bot connects to Discord server via token and reads all messages in channels where it has permissions. When a user sends a message containing exactly one emoji (Unicode or :smile: in text) and nothing else, the bot deletes that message and sends a sticker from the server's sticker collection that matches that emoji. If the message contains multiple emojis, regular text, or emojis inside text - the bot ignores it. Mapping between emoji and sticker is configured by the server admin via REST API: upload a large sticker image to the bot, assign it a name matching the emoji (e.g., smile for 😊). Bot supports multiple stickers per emoji (random selection). Pre-installed default set for popular emojis (😊, ❤️, 🎉, 👍, 🔥). Each Discord server owner has their own independent sticker mappings (isolated by guildId). REST API must allow: upload new sticker image with emoji and guildId, get all mappings for a server, delete a mapping. API must verify requests come from authorized user (server admin) via Discord OAuth2 or static API key (simple option for start). Bot stores all mappings in database and loads into memory on startup for fast processing. WHY: Discord users want to express emotions with large bright stickers instead of small emojis, similar to Nitro. Bot automates replacement, allowing each server to have its unique sticker set. Deleting original message avoids duplication and keeps chat clean."
+**Input**: User description: "project Bigmoji - Discord bot that replaces emojis with large stickers. Backend-only application with REST API for UI integration. WHAT: Bot connects to Discord server via token and reads all messages in channels where it has permissions. When a user sends a message containing exactly one emoji (Unicode or :smile: in text) and nothing else, the bot deletes that message and sends a sticker from the server's sticker collection that matches that emoji. If the message contains multiple emojis, regular text, or emojis inside text - the bot ignores it. Mapping between emoji and sticker is configured by the server admin via REST API: upload a large sticker image to the bot, assign it a name matching the emoji (e.g., smile for 😊). Bot supports multiple stickers per emoji (random selection). Pre-installed default set for popular emojis (😊, ❤️, 🎉, 👍, 🔥). Each Discord server owner has their own independent sticker mappings (isolated by guildId). REST API must allow: upload new sticker image with emoji and guildId, get all mappings for a server, delete a mapping. API must verify requests come from an authenticated Discord user who is allowed to manage the requested server; static API keys are not acceptable for UI/admin access because they do not identify users or enforce per-guild authorization. Bot stores all mappings in database and loads into memory on startup for fast processing. WHY: Discord users want to express emotions with large bright stickers instead of small emojis, similar to Nitro. Bot automates replacement, allowing each server to have its unique sticker set. Deleting original message avoids duplication and keeps chat clean."
 
 ## Clarifications
 
@@ -14,6 +14,11 @@
 
 - Q: Should local fallback stickers be used when database lookup fails or times out? → A: Use local fallback only when DB lookup succeeds and no mapping exists; on DB failure the bot does not replace the message.
 - Q: Should mapping API responses include fallback defaults or only persisted mappings? → A: `GET /mappings` returns only database (custom) mappings; fallback defaults are runtime-only and not listed.
+
+### Session 2026-06-23
+
+- Q: How must UI/admin API authorization work? → A: Use Discord OAuth2 login with server-side session cookies; each request must verify the authenticated user can manage the requested Discord guild, and static API keys must not be accepted for UI/admin mapping operations.
+- Q: How should default stickers be shared? → A: Default stickers are a global runtime fallback available to every authorized guild until that guild creates a custom mapping for the same emoji; editing/customizing creates guild-owned mappings and does not modify the global defaults.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -52,24 +57,25 @@ A user sends a message containing multiple emojis, regular text with emojis, or 
 
 ### User Story 3 - Server Admin Manages Sticker Mappings via REST API (Priority: P2)
 
-A server administrator uses the REST API to upload new sticker images, associate them with specific emojis, view existing mappings for their server, and delete mappings they no longer want.
+A server administrator signs in with Discord OAuth2, sees only Discord servers they can manage, and uses the REST API to upload new sticker images, associate them with specific emojis, view existing mappings for an authorized server, and delete mappings they no longer want.
 
 **Why this priority**: Enables server customization, which is a key differentiator. Each server having its own unique sticker set is core to the product vision.
 
-**Independent Test**: Can be fully tested by making REST API calls to upload a sticker, retrieve mappings, and delete a mapping, then verifying the database reflects the changes.
+**Independent Test**: Can be fully tested by signing in through Discord OAuth2, making REST API calls with the issued session cookie to upload/list/delete mappings for an authorized guild, and verifying calls for unauthorized guilds are rejected.
 
 **Acceptance Scenarios**:
 
-1. **Given** an authenticated server admin, **When** they upload a sticker image with an associated emoji and guildId, **Then** the sticker is stored and mapped to that emoji for that server
-2. **Given** an authenticated server admin, **When** they request all mappings for their server, **Then** they receive a list of all emoji-to-sticker mappings for that guild
-3. **Given** an authenticated server admin, **When** they delete a specific mapping, **Then** that mapping is removed and the sticker is no longer used for that emoji
-4. **Given** an unauthenticated or unauthorized user, **When** they attempt any management API call, **Then** the request is rejected with an appropriate error
+1. **Given** an authenticated Discord user with Manage Server/Admin access to a guild, **When** they upload a sticker image with an associated emoji and guildId for that guild, **Then** the sticker is stored and mapped to that emoji for that server
+2. **Given** an authenticated Discord user, **When** they request all mappings for a guild they can manage, **Then** they receive a list of custom emoji-to-sticker mappings for that guild
+3. **Given** an authenticated Discord user, **When** they delete a specific mapping for a guild they can manage, **Then** that mapping is removed and the sticker is no longer used for that emoji
+4. **Given** an unauthenticated user, **When** they attempt any management API call, **Then** the request is rejected with 401 Unauthorized
+5. **Given** an authenticated Discord user without Manage Server/Admin access to the requested guild, **When** they attempt any management API call for that guild, **Then** the request is rejected with 403 Forbidden
 
 ---
 
 ### User Story 4 - Local Fallback Stickers for First Use (Priority: P3)
 
-When a server first adds the bot, a local fallback set of sticker placeholders for popular emojis (😊, ❤️, 🎉, 👍, 🔥) is available without any configuration and is used only when no database mapping exists for that emoji in that guild.
+When a server first adds the bot, a global local fallback set of sticker placeholders for popular emojis (😊, ❤️, 🎉, 👍, 🔥) is available without any configuration and is used only when no custom database mapping exists for that emoji in that guild.
 
 **Why this priority**: Provides immediate value and reduces friction for new users. Not critical for MVP since admins can upload their own, but improves onboarding.
 
@@ -77,8 +83,9 @@ When a server first adds the bot, a local fallback set of sticker placeholders f
 
 **Acceptance Scenarios**:
 
-1. **Given** a server has just added the bot and no custom mappings exist, **When** a user sends 😊, **Then** a local fallback sticker placeholder for 😊 is posted
-2. **Given** an admin uploads one or more custom stickers for 😊, **When** a user sends 😊, **Then** only custom database-mapped stickers are eligible for random selection and fallback placeholders are not used
+1. **Given** a server has just added the bot and no custom mappings exist, **When** a user sends 😊, **Then** a global local fallback sticker placeholder for 😊 is posted
+2. **Given** an admin uploads one or more custom stickers for 😊, **When** a user sends 😊, **Then** only custom database-mapped stickers for that guild are eligible for random selection and fallback placeholders are not used
+3. **Given** one guild customizes 😊, **When** a different guild with no custom 😊 mapping sends 😊, **Then** the other guild still uses the global fallback sticker
 
 ---
 
@@ -103,27 +110,31 @@ When a server first adds the bot, a local fallback set of sticker placeholders f
 - **FR-005**: System MUST randomly select one sticker when multiple stickers are mapped to the same emoji
 - **FR-006**: System MUST ignore messages that contain multiple emojis, text with emojis, or emojis embedded within text
 - **FR-007**: System MUST ignore messages sent by the bot itself to prevent processing loops
-- **FR-008**: System MUST provide a REST API endpoint to upload a sticker image file and associate it with a specific emoji for a specific guildId
-- **FR-009**: System MUST provide a REST API endpoint to retrieve all emoji-to-sticker mappings for a given guildId
-- **FR-010**: System MUST provide a REST API endpoint to delete a specific emoji-to-sticker mapping for a given guildId
-- **FR-011**: System MUST authenticate REST API requests using either Discord OAuth2 or a static API key, verifying the requester is an authorized server admin
+- **FR-008**: System MUST provide a REST API endpoint to upload a sticker image file and associate it with a specific emoji for a specific guildId only when the authenticated Discord user can manage that guild
+- **FR-009**: System MUST provide a REST API endpoint to retrieve all custom emoji-to-sticker mappings for a given guildId only when the authenticated Discord user can manage that guild
+- **FR-010**: System MUST provide a REST API endpoint to delete a specific emoji-to-sticker mapping only when the authenticated Discord user can manage the guild that owns the mapping
+- **FR-011**: System MUST authenticate UI/admin REST API requests using Discord OAuth2 login and server-side session cookies; static API keys MUST NOT be accepted for UI/admin mapping operations
 - **FR-012**: System MUST store all sticker mappings in a persistent database
 - **FR-013**: System MUST load all sticker mappings into memory on startup for fast message processing
-- **FR-014**: System MUST include a local fallback sticker placeholder set for popular emojis (😊, ❤️, 🎉, 👍, 🔥) packaged with the application resources and MUST NOT persist this fallback set in the database
+- **FR-014**: System MUST include a global local fallback sticker placeholder set for popular emojis (😊, ❤️, 🎉, 👍, 🔥) packaged with the application resources and MUST NOT persist this fallback set in the database
 - **FR-015**: System MUST isolate sticker mappings by guildId so each Discord server has independent mappings
 - **FR-016**: System MUST first use database mappings for the detected emoji and guildId; if none exist, system MUST use local fallback placeholders when available for that emoji, otherwise leave the original message unchanged
 - **FR-017**: System MUST respect Discord channel permissions and only process messages in channels where it has both read and send permissions
 - **FR-018**: System MUST validate uploaded sticker images for acceptable format and size before storing
 - **FR-019**: System MUST NOT use local fallback placeholders when database lookup fails or times out; in this case the original message MUST remain unchanged
 - **FR-020**: System MUST return only persisted database mappings in the mapping retrieval API; local fallback placeholders are runtime-only and excluded from API response payloads
+- **FR-021**: System MUST derive manageable guilds from the authenticated Discord user's OAuth2 guild data and must authorize every mapping request against those guilds instead of trusting client-supplied guildId alone
+- **FR-022**: System MUST provide UI-facing auth endpoints for Discord OAuth2 login, callback handling, current session lookup, logout, and Discord bot install URL generation
+- **FR-023**: System MUST return 401 for missing/invalid sessions and 403 for authenticated users who attempt to access a guild they cannot manage
 
 ### Key Entities
 
 - **Sticker Mapping**: Represents the association between an emoji (Unicode character or text name) and a sticker image file, scoped to a specific guildId. Includes: emoji identifier, sticker file reference, guildId, creation timestamp.
 - **Sticker Image**: The actual image file uploaded by a server admin to be used as a sticker response. Includes: file data, format, size, unique identifier.
-- **Guild Configuration**: Represents a Discord server's sticker settings, including which database mappings are active for that guild. Includes: guildId, admin identifiers.
+- **Guild Configuration**: Represents a Discord server's sticker settings, including which custom database mappings are active for that guild. Includes: guildId and authorized Discord admin identifiers derived from OAuth2.
 - **Local Fallback Sticker**: Represents a packaged application resource (not persisted in database) used as a runtime placeholder only when a guild has no database mapping for a supported emoji.
-- **API Credential**: Represents authentication credentials for REST API access. Includes: credential type (OAuth2 token or API key), associated user/guild, permissions level, expiration (if applicable).
+- **Auth Session**: Represents a signed server session issued after Discord OAuth2 login. Includes: Discord user identifier, display name, manageable guild IDs, and expiration.
+- **Authorized Guild**: Represents a Discord guild from the authenticated user's OAuth2 guild list where the user is owner, Administrator, or has Manage Server permission.
 
 ## Success Criteria *(mandatory)*
 
@@ -135,6 +146,7 @@ When a server first adds the bot, a local fallback set of sticker placeholders f
 - **SC-004**: Server admins can upload a new sticker and have it available for use within 5 seconds of upload completion
 - **SC-005**: System supports 100 concurrent Discord servers with active emoji-to-sticker replacement without message processing delays exceeding 3 seconds
 - **SC-006**: 90% of new server admins can successfully upload and configure at least one custom sticker within 3 minutes of adding the bot, without external documentation
+- **SC-007**: 100% of UI/admin mapping API calls without a valid session are rejected with 401, and 100% of calls for guilds outside the authenticated user's manageable guild list are rejected with 403
 
 ## Assumptions
 
@@ -144,7 +156,8 @@ When a server first adds the bot, a local fallback set of sticker placeholders f
 - Sticker images uploaded by admins comply with Discord's sticker requirements (format, dimensions, file size)
 - The bot operates within a single Discord application/bot account
 - Local fallback sticker set images are provided as part of the initial application deployment
-- REST API consumers are either a separate frontend UI application or server admins using API tools directly
-- Static API key authentication is sufficient for initial release; full Discord OAuth2 flow can be implemented later
+- REST API consumers are a separate frontend UI application or authenticated server admins using API tools with a valid session cookie
+- The Discord bot token remains a server-side application credential; per-user access and bot installation are controlled through Discord OAuth2, not by issuing bot tokens to users
+- Discord OAuth2 `identify` and `guilds` scopes provide enough identity and guild permission data to authorize admin UI access
 - Database of choice supports concurrent read/write operations and can scale with the number of servers and mappings
 - The bot does not need to support custom Discord emotes (server-specific animated/static emotes) in the initial scope — only standard Unicode emojis and text-based emoji shortcodes
