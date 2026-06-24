@@ -58,18 +58,19 @@
 
 ---
 
-## Decision: API Key Authentication
+## Decision: Discord OAuth2 UI Authentication and Guild Authorization
 
-**Context**: Spec requires authenticating REST API requests. OAuth2 is complex for initial release.
+**Context**: UI/admin REST API requests need real user identity and must prevent one user from reading or modifying another Discord server's sticker mappings. A static token can authenticate the frontend as a service, but it cannot identify the Discord user or enforce per-guild ownership boundaries.
 
-**Decision**: Use static API key passed via `X-API-Key` header. Validated through a Spring MVC `HandlerInterceptor`. API key is configured via environment variable. Single API key for all servers (server admin responsibility to protect it).
+**Decision**: Use Discord OAuth2 Authorization Code flow with `identify guilds` scopes. The backend exchanges the code, loads the user's Discord guild list, keeps only guilds where the user is owner, Administrator, or has Manage Server permission, and issues a signed HttpOnly `bigmoji_session` cookie. All mapping endpoints validate the session and authorize every requested `guildId` against the session's manageable guild IDs.
 
-**Rationale**: Simplest authentication mechanism, sufficient for initial release. Can be upgraded to OAuth2 later without changing API contract.
+**Rationale**: Discord OAuth2 is the source of truth for both user identity and guild-level admin access. Signed cookies avoid exposing Discord access tokens to the UI and keep the implementation small without adding a broad security framework.
 
 **Alternatives considered**:
-- Discord OAuth2 flow — rejected as too complex for initial release
-- JWT tokens — rejected as unnecessary complexity for a single-key scenario
-- Per-guild API keys — rejected as overkill for initial release
+- Static API key in `X-API-Key` — rejected because it is a shared secret, not user authorization, and any holder could access any `guildId`
+- Login/password — rejected because Bigmoji should not own user credentials when Discord already provides identity and guild permissions
+- Per-guild API keys — rejected because they still do not identify individual users and create extra secret-rotation burden
+- Spring Security OAuth2 client — deferred until the auth surface grows; current requirements can be met with a small MVC interceptor and Java HttpClient
 
 ---
 

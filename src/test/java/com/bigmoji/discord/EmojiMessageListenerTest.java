@@ -2,10 +2,9 @@ package com.bigmoji.discord;
 
 import static org.mockito.Mockito.*;
 
-import com.bigmoji.domain.entity.StickerMapping;
 import com.bigmoji.emoji.EmojiDetector;
+import com.bigmoji.sticker.StickerAsset;
 import com.bigmoji.sticker.StickerMappingService;
-import com.bigmoji.storage.MinioStorageService;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -27,9 +26,8 @@ class EmojiMessageListenerTest {
     StickerMappingService mappingService = mock(StickerMappingService.class);
     StickerSenderService sender = mock(StickerSenderService.class);
     WebhookStickerSender webhookSender = mockWebhookSender();
-    MinioStorageService storage = mock(MinioStorageService.class);
     EmojiMessageListener listener =
-        new EmojiMessageListener(detector, mappingService, sender, webhookSender, storage);
+        new EmojiMessageListener(detector, mappingService, sender, webhookSender);
 
     MessageReceivedEvent event = mock(MessageReceivedEvent.class);
     Message message = mock(Message.class);
@@ -49,7 +47,7 @@ class EmojiMessageListenerTest {
     listener.onMessageReceived(event);
 
     verify(detector).isSingleEmojiMessage("hello");
-    verifyNoInteractions(mappingService, sender, webhookSender, storage);
+    verifyNoInteractions(mappingService, sender, webhookSender);
   }
 
   @Test
@@ -58,9 +56,8 @@ class EmojiMessageListenerTest {
     StickerMappingService mappingService = mock(StickerMappingService.class);
     StickerSenderService sender = mock(StickerSenderService.class);
     WebhookStickerSender webhookSender = mockWebhookSender();
-    MinioStorageService storage = mock(MinioStorageService.class);
     EmojiMessageListener listener =
-        new EmojiMessageListener(detector, mappingService, sender, webhookSender, storage);
+        new EmojiMessageListener(detector, mappingService, sender, webhookSender);
 
     MessageReceivedEvent event = mock(MessageReceivedEvent.class);
     Message message = mock(Message.class);
@@ -78,7 +75,7 @@ class EmojiMessageListenerTest {
 
     listener.onMessageReceived(event);
 
-    verifyNoInteractions(detector, mappingService, sender, webhookSender, storage);
+    verifyNoInteractions(detector, mappingService, sender, webhookSender);
   }
 
   @Test
@@ -87,21 +84,17 @@ class EmojiMessageListenerTest {
     StickerMappingService mappingService = mock(StickerMappingService.class);
     StickerSenderService sender = mock(StickerSenderService.class);
     WebhookStickerSender webhookSender = mockWebhookSender();
-    MinioStorageService storage = mock(MinioStorageService.class);
     EmojiMessageListener listener =
-        new EmojiMessageListener(detector, mappingService, sender, webhookSender, storage);
+        new EmojiMessageListener(detector, mappingService, sender, webhookSender);
 
     MessageReceivedEvent event = mock(MessageReceivedEvent.class);
     Message message = mock(Message.class);
     User user = mock(User.class);
     Guild guild = mock(Guild.class);
     MessageChannelUnion channel = mock(MessageChannelUnion.class);
-    StickerMapping mapping = new StickerMapping();
-    mapping.setMinioBucketName("b");
-    mapping.setMinioObjectKey("o.png");
-    mapping.setDefault(true);
 
     byte[] stickerBytes = new byte[] {1, 2, 3};
+    StickerAsset asset = new StickerAsset("sticker.png", stickerBytes, false, "o.png");
 
     when(event.getAuthor()).thenReturn(user);
     when(user.isBot()).thenReturn(false);
@@ -114,8 +107,7 @@ class EmojiMessageListenerTest {
     when(event.isFromGuild()).thenReturn(true);
     when(event.getGuild()).thenReturn(guild);
     when(guild.getId()).thenReturn("1");
-    when(mappingService.pickRandomMapping("1", "smile")).thenReturn(Optional.of(mapping));
-    when(storage.downloadFile("b", "o.png")).thenReturn(stickerBytes);
+    when(mappingService.resolveSticker("1", "smile")).thenReturn(Optional.of(asset));
     when(event.getChannel()).thenReturn(channel);
     when(channel.getId()).thenReturn("ch-2");
     when(webhookSender.sendAsAuthor(
@@ -124,13 +116,12 @@ class EmojiMessageListenerTest {
 
     listener.onMessageReceived(event);
 
-    verify(storage).downloadFile("b", "o.png");
     verify(webhookSender)
         .sendAsAuthor(
             eq(channel), eq(stickerBytes), eq("sticker.png"), eq("Alice"), eq("http://avatar.url"));
     verify(sender, never()).send(any(), any(byte[].class), anyString());
     verify(message).delete();
-    verify(mappingService).pickRandomMapping("1", "smile");
+    verify(mappingService).resolveSticker("1", "smile");
   }
 
   @Test
@@ -139,21 +130,17 @@ class EmojiMessageListenerTest {
     StickerMappingService mappingService = mock(StickerMappingService.class);
     StickerSenderService sender = mock(StickerSenderService.class);
     WebhookStickerSender webhookSender = mockWebhookSender();
-    MinioStorageService storage = mock(MinioStorageService.class);
     EmojiMessageListener listener =
-        new EmojiMessageListener(detector, mappingService, sender, webhookSender, storage);
+        new EmojiMessageListener(detector, mappingService, sender, webhookSender);
 
     MessageReceivedEvent event = mock(MessageReceivedEvent.class);
     Message message = mock(Message.class);
     User user = mock(User.class);
     Guild guild = mock(Guild.class);
     MessageChannelUnion channel = mock(MessageChannelUnion.class);
-    StickerMapping mapping = new StickerMapping();
-    mapping.setMinioBucketName("b");
-    mapping.setMinioObjectKey("o.png");
-    mapping.setDefault(true);
 
     byte[] stickerBytes = new byte[] {1, 2, 3};
+    StickerAsset asset = new StickerAsset("sticker.png", stickerBytes, false, "o.png");
 
     when(event.getAuthor()).thenReturn(user);
     when(user.isBot()).thenReturn(false);
@@ -166,8 +153,7 @@ class EmojiMessageListenerTest {
     when(event.isFromGuild()).thenReturn(true);
     when(event.getGuild()).thenReturn(guild);
     when(guild.getId()).thenReturn("1");
-    when(mappingService.pickRandomMapping("1", "smile")).thenReturn(Optional.of(mapping));
-    when(storage.downloadFile("b", "o.png")).thenReturn(stickerBytes);
+    when(mappingService.resolveSticker("1", "smile")).thenReturn(Optional.of(asset));
     when(event.getChannel()).thenReturn(channel);
     when(channel.getId()).thenReturn("ch-2");
     when(webhookSender.sendAsAuthor(any(), any(), anyString(), anyString(), anyString()))
@@ -175,7 +161,6 @@ class EmojiMessageListenerTest {
 
     listener.onMessageReceived(event);
 
-    verify(storage).downloadFile("b", "o.png");
     verify(webhookSender).sendAsAuthor(any(), any(), anyString(), anyString(), anyString());
     verify(sender).send(eq(channel), eq(stickerBytes), eq("sticker.png"));
     verify(message).delete();
@@ -187,9 +172,8 @@ class EmojiMessageListenerTest {
     StickerMappingService mappingService = mock(StickerMappingService.class);
     StickerSenderService sender = mock(StickerSenderService.class);
     WebhookStickerSender webhookSender = mockWebhookSender();
-    MinioStorageService storage = mock(MinioStorageService.class);
     EmojiMessageListener listener =
-        new EmojiMessageListener(detector, mappingService, sender, webhookSender, storage);
+        new EmojiMessageListener(detector, mappingService, sender, webhookSender);
 
     MessageReceivedEvent event = mock(MessageReceivedEvent.class);
     Message message = mock(Message.class);
@@ -197,12 +181,9 @@ class EmojiMessageListenerTest {
     Member member = mock(Member.class);
     Guild guild = mock(Guild.class);
     MessageChannelUnion channel = mock(MessageChannelUnion.class);
-    StickerMapping mapping = new StickerMapping();
-    mapping.setMinioBucketName("b");
-    mapping.setMinioObjectKey("o.png");
-    mapping.setDefault(true);
 
     byte[] stickerBytes = new byte[] {1, 2, 3};
+    StickerAsset asset = new StickerAsset("sticker.png", stickerBytes, false, "o.png");
 
     when(event.getAuthor()).thenReturn(user);
     when(user.isBot()).thenReturn(false);
@@ -217,8 +198,7 @@ class EmojiMessageListenerTest {
     when(event.isFromGuild()).thenReturn(true);
     when(event.getGuild()).thenReturn(guild);
     when(guild.getId()).thenReturn("1");
-    when(mappingService.pickRandomMapping("1", "smile")).thenReturn(Optional.of(mapping));
-    when(storage.downloadFile("b", "o.png")).thenReturn(stickerBytes);
+    when(mappingService.resolveSticker("1", "smile")).thenReturn(Optional.of(asset));
     when(event.getChannel()).thenReturn(channel);
     when(channel.getId()).thenReturn("ch-2");
     when(webhookSender.sendAsAuthor(
@@ -249,21 +229,17 @@ class EmojiMessageListenerTest {
     StickerMappingService mappingService = mock(StickerMappingService.class);
     StickerSenderService sender = mock(StickerSenderService.class);
     WebhookStickerSender webhookSender = mockWebhookSender();
-    MinioStorageService storage = mock(MinioStorageService.class);
     EmojiMessageListener listener =
-        new EmojiMessageListener(detector, mappingService, sender, webhookSender, storage);
+        new EmojiMessageListener(detector, mappingService, sender, webhookSender);
 
     MessageReceivedEvent event = mock(MessageReceivedEvent.class);
     Message message = mock(Message.class);
     User user = mock(User.class);
     Guild guild = mock(Guild.class);
     MessageChannelUnion channel = mock(MessageChannelUnion.class);
-    StickerMapping mapping = new StickerMapping();
-    mapping.setMinioBucketName("b");
-    mapping.setMinioObjectKey("o.png");
-    mapping.setDefault(true);
 
     byte[] stickerBytes = new byte[] {1, 2, 3};
+    StickerAsset asset = new StickerAsset("sticker.png", stickerBytes, false, "o.png");
 
     when(event.getAuthor()).thenReturn(user);
     when(user.isBot()).thenReturn(false);
@@ -277,8 +253,7 @@ class EmojiMessageListenerTest {
     when(event.isFromGuild()).thenReturn(true);
     when(event.getGuild()).thenReturn(guild);
     when(guild.getId()).thenReturn("1");
-    when(mappingService.pickRandomMapping("1", "smile")).thenReturn(Optional.of(mapping));
-    when(storage.downloadFile("b", "o.png")).thenReturn(stickerBytes);
+    when(mappingService.resolveSticker("1", "smile")).thenReturn(Optional.of(asset));
     when(event.getChannel()).thenReturn(channel);
     when(channel.getId()).thenReturn("ch-2");
     when(webhookSender.sendAsAuthor(
@@ -295,14 +270,13 @@ class EmojiMessageListenerTest {
   }
 
   @Test
-  void skipsReplacementWhenMappingMissing() {
+  void skipsReplacementWhenMappingMissing() throws Exception {
     EmojiDetector detector = mock(EmojiDetector.class);
     StickerMappingService mappingService = mock(StickerMappingService.class);
     StickerSenderService sender = mock(StickerSenderService.class);
     WebhookStickerSender webhookSender = mockWebhookSender();
-    MinioStorageService storage = mock(MinioStorageService.class);
     EmojiMessageListener listener =
-        new EmojiMessageListener(detector, mappingService, sender, webhookSender, storage);
+        new EmojiMessageListener(detector, mappingService, sender, webhookSender);
 
     MessageReceivedEvent event = mock(MessageReceivedEvent.class);
     Message message = mock(Message.class);
@@ -321,11 +295,11 @@ class EmojiMessageListenerTest {
     when(guild.getId()).thenReturn("guild-1");
     when(event.getChannel()).thenReturn(channel);
     when(channel.getId()).thenReturn("ch-3");
-    when(mappingService.pickRandomMapping("guild-1", "party")).thenReturn(Optional.empty());
+    when(mappingService.resolveSticker("guild-1", "party")).thenReturn(Optional.empty());
 
     listener.onMessageReceived(event);
 
-    verify(mappingService).pickRandomMapping("guild-1", "party");
-    verifyNoInteractions(sender, webhookSender, storage);
+    verify(mappingService).resolveSticker("guild-1", "party");
+    verifyNoInteractions(sender, webhookSender);
   }
 }

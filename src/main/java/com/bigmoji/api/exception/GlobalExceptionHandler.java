@@ -1,6 +1,9 @@
 package com.bigmoji.api.exception;
 
 import com.bigmoji.api.dto.ErrorResponse;
+import com.bigmoji.auth.AuthenticationRequiredException;
+import com.bigmoji.auth.GuildAccessDeniedException;
+import com.bigmoji.sticker.StickerMappingNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import org.springframework.http.HttpStatus;
@@ -11,6 +14,23 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+  @ExceptionHandler(AuthenticationRequiredException.class)
+  public ResponseEntity<ErrorResponse> unauthorized(
+      AuthenticationRequiredException ex, HttpServletRequest request) {
+    return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request.getRequestURI());
+  }
+
+  @ExceptionHandler(GuildAccessDeniedException.class)
+  public ResponseEntity<ErrorResponse> forbidden(
+      GuildAccessDeniedException ex, HttpServletRequest request) {
+    return build(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());
+  }
+
+  @ExceptionHandler(StickerMappingNotFoundException.class)
+  public ResponseEntity<ErrorResponse> notFound(
+      StickerMappingNotFoundException ex, HttpServletRequest request) {
+    return build(HttpStatus.NOT_FOUND, ex.getMessage(), request.getRequestURI());
+  }
 
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<ErrorResponse> badRequest(

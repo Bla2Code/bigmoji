@@ -1,9 +1,8 @@
 package com.bigmoji.discord;
 
-import com.bigmoji.domain.entity.StickerMapping;
 import com.bigmoji.emoji.EmojiDetector;
+import com.bigmoji.sticker.StickerAsset;
 import com.bigmoji.sticker.StickerMappingService;
-import com.bigmoji.storage.MinioStorageService;
 import java.util.Optional;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -27,19 +26,16 @@ public class EmojiMessageListener extends ListenerAdapter {
   private final StickerMappingService mappingService;
   private final StickerSenderService senderService;
   private final WebhookStickerSender webhookSender;
-  private final MinioStorageService storageService;
 
   public EmojiMessageListener(
       EmojiDetector detector,
       StickerMappingService mappingService,
       StickerSenderService senderService,
-      WebhookStickerSender webhookSender,
-      MinioStorageService storageService) {
+      WebhookStickerSender webhookSender) {
     this.detector = detector;
     this.mappingService = mappingService;
     this.senderService = senderService;
     this.webhookSender = webhookSender;
-    this.storageService = storageService;
   }
 
   @Override
@@ -101,8 +97,21 @@ public class EmojiMessageListener extends ListenerAdapter {
         raw,
         normalized);
 
-    Optional<StickerMapping> mapping = mappingService.pickRandomMapping(guildId, normalized);
-    if (mapping.isEmpty()) {
+    Optional<StickerAsset> sticker = Optional.empty();
+    try {
+      sticker = mappingService.resolveSticker(guildId, normalized);
+    } catch (Exception e) {
+      log.warn(
+          "Decision state: state={}, guildId={}, channelId={}, normalizedEmoji={}, error={}",
+          STATE_RESOURCE_MISSING,
+          guildId,
+          channelId,
+          normalized,
+          e.getMessage());
+      return;
+    }
+
+    if (sticker.isEmpty()) {
       log.debug(
           "Mapping lookup result: guildId={}, normalizedEmoji={}, found=false",
           guildId,
@@ -116,24 +125,20 @@ public class EmojiMessageListener extends ListenerAdapter {
       return;
     }
 
-    StickerMapping selected = mapping.get();
+    StickerAsset selected = sticker.get();
     log.debug(
         "Mapping lookup result: guildId={}, normalizedEmoji={}, found=true, objectKey={}, isDefault={}",
         guildId,
         normalized,
-        selected.getMinioObjectKey(),
+        selected.debugKey(),
         selected.isDefault());
 
     try {
-      byte[] stickerBytes =
-          storageService.downloadFile(selected.getMinioBucketName(), selected.getMinioObjectKey());
-      String fileName = extractFileName(selected.getMinioObjectKey());
+      byte[] stickerBytes = selected.bytes();
+      String fileName = selected.fileName();
 
       log.debug(
-          "Sticker downloaded: bucket={}, objectKey={}, sizeBytes={}",
-          selected.getMinioBucketName(),
-          selected.getMinioObjectKey(),
-          stickerBytes.length);
+          "Sticker loaded: objectKey={}, sizeBytes={}", selected.debugKey(), stickerBytes.length);
 
       String authorName = resolveAuthorName(event);
       String authorAvatarUrl = event.getAuthor().getEffectiveAvatarUrl();
@@ -150,7 +155,7 @@ public class EmojiMessageListener extends ListenerAdapter {
             guildId,
             channelId,
             normalized,
-            selected.getMinioObjectKey());
+            selected.debugKey());
       }
 
       message.delete().queue();
@@ -160,7 +165,7 @@ public class EmojiMessageListener extends ListenerAdapter {
           guildId,
           channelId,
           normalized,
-          selected.getMinioObjectKey(),
+          selected.debugKey(),
           sentViaWebhook ? "WEBHOOK" : "DIRECT");
     } catch (Exception e) {
       log.warn(
@@ -169,17 +174,9 @@ public class EmojiMessageListener extends ListenerAdapter {
           guildId,
           channelId,
           normalized,
-          selected.getMinioObjectKey(),
+          selected.debugKey(),
           e.getMessage());
     }
-  }
-
-  private String extractFileName(String objectKey) {
-    int lastDot = objectKey.lastIndexOf('.');
-    if (lastDot > 0) {
-      return "sticker" + objectKey.substring(lastDot);
-    }
-    return "sticker.bin";
   }
 
   private String resolveAuthorName(MessageReceivedEvent event) {

@@ -17,3 +17,6 @@ out/
 *.class
 *.jar
 /.gradle/
+mcp
+.ai
+data

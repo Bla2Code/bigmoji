@@ -35,8 +35,11 @@ public class StickerMappingService {
   }
 
   public Optional<StickerMapping> pickRandomMapping(String guildId, String emojiName) {
-    ensureDefaults(guildId, emojiName);
-    List<StickerMapping> mappings = cache.find(guildId, emojiName);
+    Optional<List<StickerMapping>> refreshedMappings = refreshedMappings(guildId, emojiName);
+    if (refreshedMappings.isEmpty()) {
+      return Optional.empty();
+    }
+    List<StickerMapping> mappings = refreshedMappings.get();
     if (mappings.isEmpty()) {
       log.debug("Sticker mapping lookup miss: guildId={}, normalizedEmoji={}", guildId, emojiName);
       return Optional.empty();
@@ -50,6 +53,33 @@ public class StickerMappingService {
         mappings.size(),
         selected.getMinioObjectKey());
     return Optional.of(selected);
+  }
+
+  public Optional<StickerAsset> resolveSticker(String guildId, String emojiName) throws Exception {
+    Optional<List<StickerMapping>> refreshedMappings = refreshedMappings(guildId, emojiName);
+    if (refreshedMappings.isEmpty()) {
+      return Optional.empty();
+    }
+
+    List<StickerMapping> mappings = refreshedMappings.get();
+    if (!mappings.isEmpty()) {
+      StickerMapping selected = mappings.get(random.nextInt(mappings.size()));
+      log.debug(
+          "Sticker mapping lookup hit: guildId={}, normalizedEmoji={}, mappingCount={}, selectedObjectKey={}",
+          guildId,
+          emojiName,
+          mappings.size(),
+          selected.getMinioObjectKey());
+      return Optional.of(
+          new StickerAsset(
+              extractFileName(selected.getMinioObjectKey()),
+              storage.downloadFile(selected.getMinioBucketName(), selected.getMinioObjectKey()),
+              false,
+              selected.getMinioObjectKey()));
+    }
+
+    log.debug("Sticker mapping lookup miss: guildId={}, normalizedEmoji={}", guildId, emojiName);
+    return defaultInitializer.flatMap(initializer -> initializer.fallbackFor(emojiName));
   }
 
   public StickerMapping create(
@@ -74,11 +104,12 @@ public class StickerMappingService {
     return repository.findByGuildId(guildId);
   }
 
+  public StickerMapping getById(UUID id) {
+    return repository.findById(id).orElseThrow(() -> new StickerMappingNotFoundException(id));
+  }
+
   public void deleteById(UUID id) throws Exception {
-    StickerMapping mapping =
-        repository
-            .findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Mapping not found"));
+    StickerMapping mapping = getById(id);
     storage.delete(mapping.getMinioBucketName(), mapping.getMinioObjectKey());
     repository.deleteById(id);
     cache.refreshGuildEmoji(mapping.getGuildId(), mapping.getEmojiName());
@@ -89,8 +120,25 @@ public class StickerMappingService {
     return name.substring(name.lastIndexOf('.'));
   }
 
-  private void ensureDefaults(String guildId, String normalizedEmoji) {
-    defaultInitializer.ifPresent(initializer -> initializer.initializeForGuildIfMissing(guildId));
-    cache.refreshGuildEmoji(guildId, normalizedEmoji);
+  private Optional<List<StickerMapping>> refreshedMappings(String guildId, String normalizedEmoji) {
+    try {
+      cache.refreshGuildEmoji(guildId, normalizedEmoji);
+      return Optional.of(cache.find(guildId, normalizedEmoji));
+    } catch (RuntimeException ex) {
+      log.warn(
+          "Sticker mapping lookup failed: guildId={}, normalizedEmoji={}, error={}",
+          guildId,
+          normalizedEmoji,
+          ex.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  private String extractFileName(String objectKey) {
+    int lastDot = objectKey.lastIndexOf('.');
+    if (lastDot > 0) {
+      return "sticker" + objectKey.substring(lastDot);
+    }
+    return "sticker.bin";
   }
 }

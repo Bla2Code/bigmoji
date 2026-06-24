@@ -1,16 +1,16 @@
 package com.bigmoji.sticker;
 
-import com.bigmoji.domain.entity.StickerMapping;
-import com.bigmoji.domain.repository.StickerMappingRepository;
-import com.bigmoji.storage.MinioStorageService;
-import java.io.InputStream;
 import java.util.List;
+import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class DefaultStickerInitializer {
+  private static final Logger log = LoggerFactory.getLogger(DefaultStickerInitializer.class);
+
   public static final List<DefaultSticker> DEFAULTS =
       List.of(
           new DefaultSticker("😊", "smile", "Smiling face", "smile.png"),
@@ -19,49 +19,45 @@ public class DefaultStickerInitializer {
           new DefaultSticker("👍", "thumbsup", "Thumbs up", "thumbsup.png"),
           new DefaultSticker("🔥", "fire", "Fire", "fire.png"));
 
-  private final StickerMappingRepository repository;
-  private final MinioStorageService storageService;
   private final ResourceLoader resourceLoader;
 
-  public DefaultStickerInitializer(
-      StickerMappingRepository repository,
-      MinioStorageService storageService,
-      ResourceLoader resourceLoader) {
-    this.repository = repository;
-    this.storageService = storageService;
+  public DefaultStickerInitializer(ResourceLoader resourceLoader) {
     this.resourceLoader = resourceLoader;
   }
 
-  @Transactional
-  public void initializeForGuildIfMissing(String guildId) {
-    for (DefaultSticker def : DEFAULTS) {
-      if (!repository.findByGuildIdAndEmojiName(guildId, def.shortcodeName()).isEmpty()) {
-        continue;
-      }
-
-      try {
-        var bucketName = storageService.bucketForGuild(guildId);
-        var resource = resourceLoader.getResource("classpath:default-stickers/" + def.fileName());
-        long size = resource.contentLength();
-        String objectKey;
-        try (InputStream is = resource.getInputStream()) {
-          objectKey = storageService.upload(guildId, ".png", is, size, "image/png");
-        }
-        var mapping = new StickerMapping();
-        mapping.setGuildId(guildId);
-        mapping.setEmojiName(def.shortcodeName());
-        mapping.setMinioBucketName(bucketName);
-        mapping.setMinioObjectKey(objectKey);
-        mapping.setDefault(true);
-        repository.save(mapping);
-      } catch (Exception e) {
-        throw new RuntimeException("Failed to initialize default sticker: " + def.fileName(), e);
-      }
-    }
+  public Optional<StickerAsset> fallbackFor(String emojiName) {
+    return DEFAULTS.stream()
+        .filter(def -> def.shortcodeName().equals(emojiName) || def.emojiName().equals(emojiName))
+        .findFirst()
+        .flatMap(this::load);
   }
 
   public List<DefaultSticker> defaults() {
     return DEFAULTS;
+  }
+
+  private Optional<StickerAsset> load(DefaultSticker def) {
+    try {
+      var resource = resourceLoader.getResource("classpath:default-stickers/" + def.fileName());
+      if (!resource.exists()) {
+        log.warn("Default sticker resource is missing: fileName={}", def.fileName());
+        return Optional.empty();
+      }
+      try (var inputStream = resource.getInputStream()) {
+        return Optional.of(
+            new StickerAsset(
+                def.fileName(),
+                inputStream.readAllBytes(),
+                true,
+                "default-stickers/" + def.fileName()));
+      }
+    } catch (Exception ex) {
+      log.warn(
+          "Default sticker resource could not be loaded: fileName={}, error={}",
+          def.fileName(),
+          ex.getMessage());
+      return Optional.empty();
+    }
   }
 
   public record DefaultSticker(

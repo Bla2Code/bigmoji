@@ -80,6 +80,7 @@ public class StickerMapping {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 }
+```
 
 ## Runtime-Only Fallback Catalog (Non-Persistent)
 
@@ -95,7 +96,34 @@ Represents a packaged fallback asset loaded from application resources and used 
 
 **Persistence Rule**:
 - This structure is in-memory only and has no PostgreSQL table.
-```
+
+## Runtime Auth Session (Non-Persistent)
+
+### AuthSession
+
+Represents the signed server session issued after Discord OAuth2 login.
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `userId` | String | NOT NULL | Discord user snowflake |
+| `username` | String | NOT NULL | Discord username |
+| `globalName` | String | Nullable | Discord display name |
+| `manageableGuilds` | List<AuthorizedGuild> | NOT NULL | Guilds the user can manage according to Discord OAuth2 guild data |
+| `expiresAt` | Instant | NOT NULL | Server session expiration |
+
+### AuthorizedGuild
+
+Represents a Discord guild available to the signed-in user in the admin UI.
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `id` | String | NOT NULL | Discord guild snowflake |
+| `name` | String | NOT NULL | Discord guild display name |
+
+**Authorization Rule**:
+- A user can manage mappings for a guild only when `manageableGuilds` contains the requested `guildId`.
+- `manageableGuilds` is derived from Discord OAuth2 `guilds` data and includes guilds where the user is owner, Administrator, or has Manage Server permission.
+- Auth sessions are signed HttpOnly cookies and have no PostgreSQL table.
 
 ## Spring Data JPA Repository
 

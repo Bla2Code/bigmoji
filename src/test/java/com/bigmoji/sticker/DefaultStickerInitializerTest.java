@@ -1,19 +1,22 @@
 package com.bigmoji.sticker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.bigmoji.domain.repository.StickerMappingRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.DefaultResourceLoader;
 
 class DefaultStickerInitializerTest {
   @Test
   void providesFiveDefaults() {
-    DefaultStickerInitializer init =
-        new DefaultStickerInitializer(
-            mock(StickerMappingRepository.class),
-            mock(com.bigmoji.storage.MinioStorageService.class),
-            mock(org.springframework.core.io.ResourceLoader.class));
+    DefaultStickerInitializer init = new DefaultStickerInitializer(new DefaultResourceLoader());
     assertEquals(5, init.defaults().size());
+  }
+
+  @Test
+  void loadsFallbackAssetFromResources() {
+    DefaultStickerInitializer init = new DefaultStickerInitializer(new DefaultResourceLoader());
+
+    assertTrue(init.fallbackFor("smile").isPresent());
   }
 }

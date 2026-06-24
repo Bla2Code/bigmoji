@@ -41,19 +41,24 @@ class StickerMappingServiceTest {
   }
 
   @Test
-  void initializesDefaultsBeforeLookup() {
+  void resolvesFallbackWhenCustomMappingMissing() throws Exception {
     StickerMappingRepository repo = mock(StickerMappingRepository.class);
     StickerMappingCache cache = mock(StickerMappingCache.class);
     MinioStorageService storage = mock(MinioStorageService.class);
     DefaultStickerInitializer initializer = mock(DefaultStickerInitializer.class);
+    StickerAsset fallback =
+        new StickerAsset("heart.png", new byte[] {1}, true, "default/heart.png");
     when(cache.find("guild-1", "heart")).thenReturn(List.of());
+    when(initializer.fallbackFor("heart")).thenReturn(Optional.of(fallback));
 
     StickerMappingService service =
         new StickerMappingService(repo, cache, storage, Optional.of(initializer));
 
-    service.pickRandomMapping("guild-1", "heart");
+    Optional<StickerAsset> resolved = service.resolveSticker("guild-1", "heart");
 
-    verify(initializer).initializeForGuildIfMissing("guild-1");
+    assertTrue(resolved.isPresent());
+    assertTrue(resolved.get().isDefault());
+    verify(initializer).fallbackFor("heart");
     verify(cache).refreshGuildEmoji("guild-1", "heart");
   }
 }

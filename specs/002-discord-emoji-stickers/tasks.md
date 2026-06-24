@@ -41,8 +41,8 @@ description: "Task list for Discord Emoji-to-Sticker Bot (Bigmoji)"
 - [X] T008 [P] Implement MinIO client configuration in src/main/java/com/bigmoji/config/MinioConfig.java
 - [X] T009 [P] Implement Discord JDA configuration and gateway intents in src/main/java/com/bigmoji/config/JdaConfig.java
 - [X] T010 Implement async executor configuration for message processing in src/main/java/com/bigmoji/config/AsyncConfig.java
-- [X] T011 Implement API key authentication interceptor in src/main/java/com/bigmoji/config/ApiKeyInterceptor.java
-- [X] T012 Configure interceptor registration and API route protection in src/main/java/com/bigmoji/config/WebMvcConfig.java
+- [X] T011 Implement Discord OAuth2/session authentication services in src/main/java/com/bigmoji/auth/DiscordOAuthClient.java, src/main/java/com/bigmoji/auth/SignedCookieSessionService.java, and src/main/java/com/bigmoji/auth/OAuthStateService.java
+- [X] T012 Configure session interceptor registration and API route protection in src/main/java/com/bigmoji/auth/AuthSessionInterceptor.java and src/main/java/com/bigmoji/config/WebMvcConfig.java
 - [X] T013 Implement global API error response contract in src/main/java/com/bigmoji/api/exception/GlobalExceptionHandler.java and src/main/java/com/bigmoji/api/dto/ErrorResponse.java
 - [X] T014 Implement MinIO storage service (upload/delete/presigned URL) in src/main/java/com/bigmoji/storage/MinioStorageService.java
 - [X] T015 Implement in-memory mapping cache bootstrap and refresh logic in src/main/java/com/bigmoji/sticker/StickerMappingCache.java
@@ -98,15 +98,15 @@ description: "Task list for Discord Emoji-to-Sticker Bot (Bigmoji)"
 
 ## Phase 5: User Story 3 - Server Admin Manages Sticker Mappings via REST API (Priority: P2)
 
-**Goal**: Provide authenticated REST API to upload, list, and delete guild-scoped sticker mappings.
+**Goal**: Provide Discord-authenticated REST API to upload, list, and delete guild-scoped sticker mappings.
 
-**Independent Test**: Call upload/list/delete API endpoints with valid API key and verify persistence and storage side effects; verify unauthorized calls fail with 401.
+**Independent Test**: Sign in with Discord OAuth2, call upload/list/delete API endpoints with the issued session cookie, verify persistence/storage side effects for authorized guilds, verify missing sessions fail with 401, and verify unauthorized guild access fails with 403.
 
 ### Tests for User Story 3
 
 - [X] T029 [P] [US3] Add API contract tests for POST/GET/DELETE mapping endpoints in src/test/java/com/bigmoji/api/StickerMappingControllerContractTest.java
 - [X] T030 [P] [US3] Add integration tests for repository/cache synchronization after API writes in src/test/java/com/bigmoji/api/StickerMappingControllerIntegrationTest.java
-- [X] T031 [US3] Add authentication interceptor tests for missing/invalid API key in src/test/java/com/bigmoji/config/ApiKeyInterceptorTest.java
+- [X] T031 [US3] Add authentication/session interceptor tests for missing/invalid session cookies in src/test/java/com/bigmoji/auth/AuthSessionInterceptorTest.java and src/test/java/com/bigmoji/auth/SignedCookieSessionServiceTest.java
 
 ### Implementation for User Story 3
 
@@ -114,6 +114,8 @@ description: "Task list for Discord Emoji-to-Sticker Bot (Bigmoji)"
 - [X] T033 [US3] Implement REST controller endpoints for upload/list/delete mappings in src/main/java/com/bigmoji/api/StickerMappingController.java
 - [X] T034 [US3] Implement service-layer upload/list/delete workflow with DB + MinIO + cache updates in src/main/java/com/bigmoji/sticker/StickerMappingService.java
 - [X] T035 [US3] Add upload validation for file format/size and guildId/emojiName constraints in src/main/java/com/bigmoji/api/StickerMappingController.java
+- [X] T035A [US3] Implement auth endpoints for Discord login/callback/current session/logout/install URL in src/main/java/com/bigmoji/api/AuthController.java
+- [X] T035B [US3] Enforce per-guild authorization on mapping upload/list/delete in src/main/java/com/bigmoji/auth/GuildAuthorizationService.java and src/main/java/com/bigmoji/api/StickerMappingController.java
 
 **Checkpoint**: User Story 3 APIs are independently usable for guild-specific mapping management.
 
@@ -213,7 +215,7 @@ Task: "T029 [US3] Contract tests in src/test/java/com/bigmoji/api/StickerMapping
 Task: "T030 [US3] Integration tests in src/test/java/com/bigmoji/api/StickerMappingControllerIntegrationTest.java"
 
 Task: "T032 [US3] DTOs in src/main/java/com/bigmoji/api/dto/MappingUploadRequest.java and src/main/java/com/bigmoji/api/dto/MappingResponse.java"
-Task: "T031 [US3] API key interceptor tests in src/test/java/com/bigmoji/config/ApiKeyInterceptorTest.java"
+Task: "T031 [US3] Session auth tests in src/test/java/com/bigmoji/auth/AuthSessionInterceptorTest.java and src/test/java/com/bigmoji/auth/SignedCookieSessionServiceTest.java"
 ```
 
 ### Parallel Example: User Story 4
