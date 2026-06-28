@@ -33,9 +33,17 @@ describe("mapping API", () => {
 
   it("uploads multipart form data without forcing json content type", async () => {
     const file = new File(["demo"], "demo.png", { type: "image/png" });
-    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(customMappings[0], { status: 201 }));
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse(customMappings[0], { status: 201 }),
+    );
 
-    await uploadMapping({ emojiName: "🔥", file, guildId: "123" });
+    const response = await uploadMapping({ emojiName: "🔥", file, guildId: "123" });
+
+    expect(response.emojiPreview?.shortcode).toBe(":party_blob:");
+    expect(response.stickerPreviewState).toBe("available");
+    expect(response.stickerPreviewUrl).toBe(
+      "/api/mappings/a1b2c3d4-e5f6-7890-abcd-ef1234567890/preview",
+    );
 
     const call = vi.mocked(fetch).mock.calls[0];
     expect(call).toBeDefined();
@@ -71,9 +79,11 @@ describe("mapping API", () => {
       await listMappings("123");
       throw new Error("Expected listMappings to reject");
     } catch (error) {
-      const apiError = (error as {
-        apiError?: { kind?: unknown; status?: unknown };
-      }).apiError;
+      const apiError = (
+        error as {
+          apiError?: { kind?: unknown; status?: unknown };
+        }
+      ).apiError;
       expect(apiError?.kind).toBe(kind);
       expect(apiError?.status).toBe(status);
     }

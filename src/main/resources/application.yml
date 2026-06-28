@@ -43,5 +43,5 @@ management:
 
 logging:
   level:
+    com.bigmoji.auth: DEBUG
     com.bigmoji.discord: DEBUG
-

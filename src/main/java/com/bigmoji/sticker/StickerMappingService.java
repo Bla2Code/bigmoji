@@ -2,6 +2,7 @@ package com.bigmoji.sticker;
 
 import com.bigmoji.domain.entity.StickerMapping;
 import com.bigmoji.domain.repository.StickerMappingRepository;
+import com.bigmoji.emoji.EmojiNormalizer;
 import com.bigmoji.storage.MinioStorageService;
 import java.io.InputStream;
 import java.util.List;
@@ -22,6 +23,7 @@ public class StickerMappingService {
   private final MinioStorageService storage;
   private final Optional<DefaultStickerInitializer> defaultInitializer;
   private final Random random = new Random();
+  private final EmojiNormalizer normalizer = new EmojiNormalizer();
 
   public StickerMappingService(
       StickerMappingRepository repository,
@@ -35,13 +37,18 @@ public class StickerMappingService {
   }
 
   public Optional<StickerMapping> pickRandomMapping(String guildId, String emojiName) {
-    Optional<List<StickerMapping>> refreshedMappings = refreshedMappings(guildId, emojiName);
+    String normalizedEmojiName = normalizeEmojiName(emojiName);
+    Optional<List<StickerMapping>> refreshedMappings =
+        refreshedMappings(guildId, normalizedEmojiName);
     if (refreshedMappings.isEmpty()) {
       return Optional.empty();
     }
     List<StickerMapping> mappings = refreshedMappings.get();
     if (mappings.isEmpty()) {
-      log.debug("Sticker mapping lookup miss: guildId={}, normalizedEmoji={}", guildId, emojiName);
+      log.debug(
+          "Sticker mapping lookup miss: guildId={}, normalizedEmoji={}",
+          guildId,
+          normalizedEmojiName);
       return Optional.empty();
     }
 
@@ -49,14 +56,16 @@ public class StickerMappingService {
     log.debug(
         "Sticker mapping lookup hit: guildId={}, normalizedEmoji={}, mappingCount={}, selectedObjectKey={}",
         guildId,
-        emojiName,
+        normalizedEmojiName,
         mappings.size(),
         selected.getMinioObjectKey());
     return Optional.of(selected);
   }
 
   public Optional<StickerAsset> resolveSticker(String guildId, String emojiName) throws Exception {
-    Optional<List<StickerMapping>> refreshedMappings = refreshedMappings(guildId, emojiName);
+    String normalizedEmojiName = normalizeEmojiName(emojiName);
+    Optional<List<StickerMapping>> refreshedMappings =
+        refreshedMappings(guildId, normalizedEmojiName);
     if (refreshedMappings.isEmpty()) {
       return Optional.empty();
     }
@@ -67,7 +76,7 @@ public class StickerMappingService {
       log.debug(
           "Sticker mapping lookup hit: guildId={}, normalizedEmoji={}, mappingCount={}, selectedObjectKey={}",
           guildId,
-          emojiName,
+          normalizedEmojiName,
           mappings.size(),
           selected.getMinioObjectKey());
       return Optional.of(
@@ -78,12 +87,20 @@ public class StickerMappingService {
               selected.getMinioObjectKey()));
     }
 
-    log.debug("Sticker mapping lookup miss: guildId={}, normalizedEmoji={}", guildId, emojiName);
-    return defaultInitializer.flatMap(initializer -> initializer.fallbackFor(emojiName));
+    log.debug(
+        "Sticker mapping lookup miss: guildId={}, normalizedEmoji={}",
+        guildId,
+        normalizedEmojiName);
+    return defaultInitializer.flatMap(initializer -> initializer.fallbackFor(normalizedEmojiName));
   }
 
   public StickerMapping create(
       String guildId, String emojiName, MultipartFile file, boolean isDefault) throws Exception {
+    String normalizedEmojiName = normalizeEmojiName(emojiName);
+    if (normalizedEmojiName.isBlank()) {
+      throw new IllegalArgumentException("Emoji name is required");
+    }
+
     String ext = extension(file.getOriginalFilename());
     String objectKey;
     try (InputStream is = file.getInputStream()) {
@@ -91,17 +108,21 @@ public class StickerMappingService {
     }
     StickerMapping mapping = new StickerMapping();
     mapping.setGuildId(guildId);
-    mapping.setEmojiName(emojiName);
+    mapping.setEmojiName(emojiName.trim());
     mapping.setMinioBucketName(storage.bucketForGuild(guildId));
     mapping.setMinioObjectKey(objectKey);
     mapping.setDefault(isDefault);
     StickerMapping saved = repository.save(mapping);
-    cache.refreshGuildEmoji(guildId, emojiName);
+    cache.refreshGuildEmoji(guildId, normalizedEmojiName);
     return saved;
   }
 
   public List<StickerMapping> listByGuild(String guildId) {
     return repository.findByGuildId(guildId);
+  }
+
+  public byte[] previewBytesFor(StickerMapping mapping) throws Exception {
+    return storage.downloadFile(mapping.getMinioBucketName(), mapping.getMinioObjectKey());
   }
 
   public StickerMapping getById(UUID id) {
@@ -140,5 +161,9 @@ public class StickerMappingService {
       return "sticker" + objectKey.substring(lastDot);
     }
     return "sticker.bin";
+  }
+
+  private String normalizeEmojiName(String emojiName) {
+    return normalizer.normalize(emojiName);
   }
 }

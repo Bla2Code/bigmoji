@@ -1,7 +1,7 @@
 import { Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toApiError } from "../../api/client";
-import type { ApiError, StickerMapping } from "../../api/types";
+import type { ApiError, ServerEmojiPreview, StickerMapping } from "../../api/types";
 import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
 import { ErrorBanner } from "../../components/ErrorBanner";
@@ -15,8 +15,18 @@ interface MappingListProps {
 export function MappingList({ mappings, onDelete }: MappingListProps) {
   const [pendingDelete, setPendingDelete] = useState<StickerMapping | undefined>();
   const [deleteError, setDeleteError] = useState<ApiError | undefined>();
+  const [failedAssets, setFailedAssets] = useState<Set<string>>(() => new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const groups = useMemo(() => groupMappings(mappings), [mappings]);
+
+  function markAssetFailed(key: string) {
+    setFailedAssets((current) => {
+      if (current.has(key)) return current;
+      const next = new Set(current);
+      next.add(key);
+      return next;
+    });
+  }
 
   async function confirmDelete() {
     if (!pendingDelete) return;
@@ -53,41 +63,82 @@ export function MappingList({ mappings, onDelete }: MappingListProps) {
         </div>
       </div>
       <div className="mapping-groups">
-        {groups.map(([emojiName, group]) => (
-          <article className="mapping-group" key={emojiName}>
-            <header>
-              <span className="mapping-emoji" aria-hidden="true">
-                {emojiName}
-              </span>
-              <div>
-                <h3>{emojiName}</h3>
-                <p>
-                  {group.length} custom sticker{group.length === 1 ? "" : "s"}
-                </p>
-              </div>
-            </header>
-            <ul>
-              {group.map((mapping) => (
-                <li key={mapping.id}>
-                  <div>
-                    <strong>Mapping {mapping.id.slice(0, 8)}</strong>
-                    <span>Created {formatDate(mapping.createdAt)}</span>
-                  </div>
-                  <Button
-                    icon={<Trash2 aria-hidden="true" size={16} />}
-                    onClick={() => {
-                      setDeleteError(undefined);
-                      setPendingDelete(mapping);
-                    }}
-                    variant="danger"
-                  >
-                    Delete
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </article>
-        ))}
+        {groups.map((group) => {
+          const emojiAssetKey = `emoji-${group.groupKey}`;
+          const canShowEmoji =
+            Boolean(group.emojiPreview?.available) &&
+            Boolean(group.emojiPreview?.imageUrl) &&
+            !failedAssets.has(emojiAssetKey);
+
+          return (
+            <article className="mapping-group" key={group.groupKey}>
+              <header>
+                <span className="mapping-emoji" title={group.displayName}>
+                  {canShowEmoji && group.emojiPreview?.imageUrl ? (
+                    <img
+                      alt={`Custom emoji ${group.displayName}`}
+                      onError={() => markAssetFailed(emojiAssetKey)}
+                      src={group.emojiPreview.imageUrl}
+                    />
+                  ) : (
+                    <span className="mapping-emoji-fallback">
+                      {group.fallbackTrigger}
+                    </span>
+                  )}
+                </span>
+                <div>
+                  <h3>{group.displayName}</h3>
+                  <p>
+                    {group.mappings.length} custom sticker
+                    {group.mappings.length === 1 ? "" : "s"}
+                  </p>
+                </div>
+              </header>
+              <ul>
+                {group.mappings.map((mapping) => {
+                  const stickerAssetKey = `sticker-${mapping.id}`;
+                  const canShowSticker =
+                    mapping.stickerPreviewState === "available" &&
+                    Boolean(mapping.stickerPreviewUrl) &&
+                    !failedAssets.has(stickerAssetKey);
+
+                  return (
+                    <li key={mapping.id}>
+                      <span className="mapping-sticker-preview">
+                        {canShowSticker && mapping.stickerPreviewUrl ? (
+                          <img
+                            alt={`Uploaded sticker for ${displayTrigger(mapping)}`}
+                            onError={() => markAssetFailed(stickerAssetKey)}
+                            src={mapping.stickerPreviewUrl}
+                          />
+                        ) : (
+                          <span>Preview unavailable</span>
+                        )}
+                      </span>
+                      <div className="mapping-row-copy">
+                        <strong>Sticker for {displayTrigger(mapping)}</strong>
+                        <span>
+                          Mapping {mapping.id.slice(0, 8)} - Created{" "}
+                          {formatDate(mapping.createdAt)}
+                        </span>
+                      </div>
+                      <Button
+                        icon={<Trash2 aria-hidden="true" size={16} />}
+                        onClick={() => {
+                          setDeleteError(undefined);
+                          setPendingDelete(mapping);
+                        }}
+                        variant="danger"
+                      >
+                        Delete
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </article>
+          );
+        })}
       </div>
 
       <Modal
@@ -97,7 +148,8 @@ export function MappingList({ mappings, onDelete }: MappingListProps) {
       >
         <div className="delete-confirmation">
           <p>
-            This removes the custom mapping for {pendingDelete?.emojiName}. The
+            This removes the custom mapping for{" "}
+            {pendingDelete ? displayTrigger(pendingDelete) : "this trigger"}. The
             default sticker behavior remains available.
           </p>
           <ErrorBanner error={deleteError} title="Delete failed" />
@@ -120,17 +172,49 @@ export function MappingList({ mappings, onDelete }: MappingListProps) {
   );
 }
 
+interface MappingGroup {
+  displayName: string;
+  emojiPreview?: ServerEmojiPreview;
+  fallbackTrigger: string;
+  groupKey: string;
+  mappings: StickerMapping[];
+}
+
 function groupMappings(mappings: StickerMapping[]) {
-  const grouped = new Map<string, StickerMapping[]>();
+  const grouped = new Map<string, MappingGroup>();
 
   for (const mapping of mappings) {
-    const group = grouped.get(mapping.emojiName) ?? [];
-    group.push(mapping);
-    grouped.set(mapping.emojiName, group);
+    const groupKey = groupKeyFor(mapping);
+    const existing = grouped.get(groupKey);
+    if (existing) {
+      existing.mappings.push(mapping);
+    } else {
+      grouped.set(groupKey, {
+        displayName: displayTrigger(mapping),
+        emojiPreview: mapping.emojiPreview,
+        fallbackTrigger: displayTrigger(mapping),
+        groupKey,
+        mappings: [mapping],
+      });
+    }
   }
 
-  return [...grouped.entries()].sort(([left], [right]) =>
-    left.localeCompare(right),
+  return [...grouped.values()].sort((left, right) =>
+    left.displayName.localeCompare(right.displayName),
+  );
+}
+
+function groupKeyFor(mapping: StickerMapping) {
+  if (mapping.emojiPreview?.id) {
+    return `custom-${mapping.emojiPreview.id}`;
+  }
+
+  return mapping.emojiPreview?.shortcode ?? mapping.emojiName;
+}
+
+function displayTrigger(mapping: StickerMapping) {
+  return (
+    mapping.emojiPreview?.shortcode ?? mapping.emojiPreview?.name ?? mapping.emojiName
   );
 }
 

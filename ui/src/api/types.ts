@@ -1,9 +1,4 @@
-export type SessionStatus =
-  | "loading"
-  | "guest"
-  | "authenticated"
-  | "expired"
-  | "error";
+export type SessionStatus = "loading" | "guest" | "authenticated" | "expired" | "error";
 
 export interface ManageableGuild {
   id: string;
@@ -25,14 +20,27 @@ export type CurrentSession =
   | ({ status: "authenticated" } & CurrentSessionPayload)
   | { status: "error"; error: ApiError };
 
+export type StickerPreviewState = "available" | "unavailable";
+
+export interface ServerEmojiPreview {
+  id?: string;
+  name: string;
+  shortcode: string;
+  imageUrl?: string;
+  animated: boolean;
+  available: boolean;
+}
+
 export interface StickerMapping {
   id: string;
   guildId: string;
   emojiName: string;
-  minioBucketName?: string;
-  minioObjectKey?: string;
+  isDefault: boolean;
   createdAt: string;
   updatedAt: string;
+  stickerPreviewUrl?: string;
+  stickerPreviewState: StickerPreviewState;
+  emojiPreview?: ServerEmojiPreview;
 }
 
 export interface DefaultSticker {
