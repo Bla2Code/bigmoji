@@ -64,6 +64,51 @@ class StickerMappingServiceTest {
   }
 
   @Test
+  void resolvesNewDefaultFallbackWhenCustomMappingMissing() throws Exception {
+    StickerMappingRepository repo = mock(StickerMappingRepository.class);
+    StickerMappingCache cache = mock(StickerMappingCache.class);
+    MinioStorageService storage = mock(MinioStorageService.class);
+    DefaultStickerInitializer initializer = mock(DefaultStickerInitializer.class);
+    StickerAsset fallback = new StickerAsset("cry.png", new byte[] {1}, true, "default/cry.png");
+    when(cache.find("guild-1", "cry")).thenReturn(List.of());
+    when(initializer.fallbackFor("cry")).thenReturn(Optional.of(fallback));
+
+    StickerMappingService service =
+        new StickerMappingService(repo, cache, storage, Optional.of(initializer));
+
+    Optional<StickerAsset> resolved = service.resolveSticker("guild-1", "cry");
+
+    assertTrue(resolved.isPresent());
+    assertEquals("cry.png", resolved.get().fileName());
+    assertTrue(resolved.get().isDefault());
+    verify(initializer).fallbackFor("cry");
+    verify(cache).refreshGuildEmoji("guild-1", "cry");
+  }
+
+  @Test
+  void keepsCustomMappingsBeforeNewDefaultFallback() throws Exception {
+    StickerMappingRepository repo = mock(StickerMappingRepository.class);
+    StickerMappingCache cache = mock(StickerMappingCache.class);
+    MinioStorageService storage = mock(MinioStorageService.class);
+    DefaultStickerInitializer initializer = mock(DefaultStickerInitializer.class);
+    StickerMapping custom = new StickerMapping();
+    custom.setMinioBucketName("bucket-guild-1");
+    custom.setMinioObjectKey("stickers/custom.png");
+    when(cache.find("guild-1", "cry")).thenReturn(List.of(custom));
+    when(storage.downloadFile("bucket-guild-1", "stickers/custom.png")).thenReturn(new byte[] {9});
+
+    StickerMappingService service =
+        new StickerMappingService(repo, cache, storage, Optional.of(initializer));
+
+    Optional<StickerAsset> resolved = service.resolveSticker("guild-1", "cry");
+
+    assertTrue(resolved.isPresent());
+    assertEquals("sticker.png", resolved.get().fileName());
+    assertFalse(resolved.get().isDefault());
+    verify(initializer, never()).fallbackFor(anyString());
+  }
+
+  @Test
   void keepsCustomEmojiDisplayValueAndRefreshesNormalizedName() throws Exception {
     StickerMappingRepository repo = mock(StickerMappingRepository.class);
     StickerMappingCache cache = mock(StickerMappingCache.class);

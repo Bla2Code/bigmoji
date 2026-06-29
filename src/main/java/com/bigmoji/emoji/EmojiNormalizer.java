@@ -17,7 +17,11 @@ public class EmojiNormalizer {
           "❤", "heart",
           "🎉", "party",
           "👍", "thumbsup",
-          "🔥", "fire");
+          "🔥", "fire",
+          "😢", "cry",
+          "😮", "open_mouth",
+          "😔", "pensive",
+          "🫩", "face_with_bags_under_eyes");
 
   public String normalize(String raw) {
     if (raw == null) {

@@ -346,4 +346,80 @@ class EmojiMessageListenerTest {
     verify(sender, never()).send(any(), any(byte[].class), anyString());
     verify(message).delete();
   }
+
+  @Test
+  void sendsReplacementForNewDefaultEmojiInput() throws Exception {
+    EmojiDetector detector = new EmojiDetector();
+    StickerMappingService mappingService = mock(StickerMappingService.class);
+    StickerSenderService sender = mock(StickerSenderService.class);
+    WebhookStickerSender webhookSender = mockWebhookSender();
+    EmojiMessageListener listener =
+        new EmojiMessageListener(detector, mappingService, sender, webhookSender);
+
+    MessageReceivedEvent event = mock(MessageReceivedEvent.class);
+    Message message = mock(Message.class);
+    User user = mock(User.class);
+    Guild guild = mock(Guild.class);
+    MessageChannelUnion channel = mock(MessageChannelUnion.class);
+
+    byte[] stickerBytes = new byte[] {1, 2, 3};
+    StickerAsset asset =
+        new StickerAsset("cry.png", stickerBytes, true, "default-stickers/cry.png");
+
+    when(event.getAuthor()).thenReturn(user);
+    when(user.isBot()).thenReturn(false);
+    when(user.getName()).thenReturn("Alice");
+    when(user.getEffectiveAvatarUrl()).thenReturn("http://avatar.url");
+    when(event.getMessage()).thenReturn(message);
+    when(message.getContentRaw()).thenReturn("😢");
+    when(event.isFromGuild()).thenReturn(true);
+    when(event.getGuild()).thenReturn(guild);
+    when(guild.getId()).thenReturn("1");
+    when(mappingService.resolveSticker("1", "cry")).thenReturn(Optional.of(asset));
+    when(event.getChannel()).thenReturn(channel);
+    when(channel.getId()).thenReturn("ch-2");
+    when(webhookSender.sendAsAuthor(
+            eq(channel), eq(stickerBytes), eq("cry.png"), eq("Alice"), eq("http://avatar.url")))
+        .thenReturn(true);
+
+    listener.onMessageReceived(event);
+
+    verify(mappingService).resolveSticker("1", "cry");
+    verify(webhookSender)
+        .sendAsAuthor(
+            eq(channel), eq(stickerBytes), eq("cry.png"), eq("Alice"), eq("http://avatar.url"));
+    verify(sender, never()).send(any(), any(byte[].class), anyString());
+    verify(message).delete();
+  }
+
+  @Test
+  void keepsMixedContentWithNewEmojiOutsideReplacementScope() {
+    EmojiDetector detector = new EmojiDetector();
+    StickerMappingService mappingService = mock(StickerMappingService.class);
+    StickerSenderService sender = mock(StickerSenderService.class);
+    WebhookStickerSender webhookSender = mockWebhookSender();
+    EmojiMessageListener listener =
+        new EmojiMessageListener(detector, mappingService, sender, webhookSender);
+
+    MessageReceivedEvent event = mock(MessageReceivedEvent.class);
+    Message message = mock(Message.class);
+    User user = mock(User.class);
+    Guild guild = mock(Guild.class);
+    MessageChannelUnion channel = mock(MessageChannelUnion.class);
+
+    when(event.getAuthor()).thenReturn(user);
+    when(user.isBot()).thenReturn(false);
+    when(event.isFromGuild()).thenReturn(true);
+    when(event.getGuild()).thenReturn(guild);
+    when(guild.getId()).thenReturn("1");
+    when(event.getChannel()).thenReturn(channel);
+    when(channel.getId()).thenReturn("ch-1");
+    when(user.getId()).thenReturn("user-1");
+    when(event.getMessage()).thenReturn(message);
+    when(message.getContentRaw()).thenReturn("hi 😢");
+
+    listener.onMessageReceived(event);
+
+    verifyNoInteractions(mappingService, sender, webhookSender);
+  }
 }
