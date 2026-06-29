@@ -11,6 +11,9 @@ build/
 *.log
 .env*
 !.env.example
+*.tsbuildinfo
+playwright-report/
+test-results/
 target/
 .gradle/
 out/
