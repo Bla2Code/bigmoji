@@ -1,7 +1,13 @@
-FROM gradle:8.14-jdk21 AS build
+# syntax=docker/dockerfile:1.7
+
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
-COPY . .
-RUN gradle bootJar --no-daemon
+COPY gradlew settings.gradle.kts build.gradle.kts ./
+COPY gradle ./gradle
+RUN chmod +x gradlew
+RUN --mount=type=cache,target=/root/.gradle ./gradlew dependencies --no-daemon
+COPY src ./src
+RUN --mount=type=cache,target=/root/.gradle ./gradlew bootJar --no-daemon
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app

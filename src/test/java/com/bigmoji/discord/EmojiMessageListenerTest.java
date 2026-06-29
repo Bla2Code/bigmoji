@@ -302,4 +302,48 @@ class EmojiMessageListenerTest {
     verify(mappingService).resolveSticker("guild-1", "party");
     verifyNoInteractions(sender, webhookSender);
   }
+
+  @Test
+  void sendsReplacementForDiscordCustomEmojiMention() throws Exception {
+    EmojiDetector detector = new EmojiDetector();
+    StickerMappingService mappingService = mock(StickerMappingService.class);
+    StickerSenderService sender = mock(StickerSenderService.class);
+    WebhookStickerSender webhookSender = mockWebhookSender();
+    EmojiMessageListener listener =
+        new EmojiMessageListener(detector, mappingService, sender, webhookSender);
+
+    MessageReceivedEvent event = mock(MessageReceivedEvent.class);
+    Message message = mock(Message.class);
+    User user = mock(User.class);
+    Guild guild = mock(Guild.class);
+    MessageChannelUnion channel = mock(MessageChannelUnion.class);
+
+    byte[] stickerBytes = new byte[] {1, 2, 3};
+    StickerAsset asset = new StickerAsset("sticker.png", stickerBytes, false, "o.png");
+
+    when(event.getAuthor()).thenReturn(user);
+    when(user.isBot()).thenReturn(false);
+    when(user.getName()).thenReturn("Alice");
+    when(user.getEffectiveAvatarUrl()).thenReturn("http://avatar.url");
+    when(event.getMessage()).thenReturn(message);
+    when(message.getContentRaw()).thenReturn("<:aaa:933444648909832222>");
+    when(event.isFromGuild()).thenReturn(true);
+    when(event.getGuild()).thenReturn(guild);
+    when(guild.getId()).thenReturn("1");
+    when(mappingService.resolveSticker("1", "aaa")).thenReturn(Optional.of(asset));
+    when(event.getChannel()).thenReturn(channel);
+    when(channel.getId()).thenReturn("ch-2");
+    when(webhookSender.sendAsAuthor(
+            eq(channel), eq(stickerBytes), eq("sticker.png"), eq("Alice"), eq("http://avatar.url")))
+        .thenReturn(true);
+
+    listener.onMessageReceived(event);
+
+    verify(mappingService).resolveSticker("1", "aaa");
+    verify(webhookSender)
+        .sendAsAuthor(
+            eq(channel), eq(stickerBytes), eq("sticker.png"), eq("Alice"), eq("http://avatar.url"));
+    verify(sender, never()).send(any(), any(byte[].class), anyString());
+    verify(message).delete();
+  }
 }

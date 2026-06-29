@@ -1,4 +1,8 @@
 import type { Page, Route } from "@playwright/test";
+import type { StickerMapping } from "../../src/api/types";
+
+const previewImage =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lrRkVwAAAABJRU5ErkJggg==";
 
 export const testPrimaryGuild = {
   id: "123456789012345678",
@@ -31,15 +35,40 @@ export const testDefaults = [
   },
 ];
 
-export const testMappings = [
+export const testMappings: StickerMapping[] = [
   {
     id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     guildId: testPrimaryGuild.id,
-    emojiName: "😊",
-    minioBucketName: "bigmoji-123456789012345678",
-    minioObjectKey: "internal/smile.png",
+    emojiName: ":party_blob:",
+    isDefault: false,
     createdAt: "2026-06-24T16:00:00Z",
     updatedAt: "2026-06-24T16:00:00Z",
+    stickerPreviewUrl: previewImage,
+    stickerPreviewState: "available",
+    emojiPreview: {
+      id: "987654321098765432",
+      name: "party_blob",
+      shortcode: ":party_blob:",
+      imageUrl: previewImage,
+      animated: false,
+      available: true,
+    },
+  },
+  {
+    id: "d1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    guildId: testPrimaryGuild.id,
+    emojiName: ":deleted_blob:",
+    isDefault: false,
+    createdAt: "2026-06-24T16:30:00Z",
+    updatedAt: "2026-06-24T16:30:00Z",
+    stickerPreviewState: "unavailable",
+    emojiPreview: {
+      id: "876543210987654321",
+      name: "deleted_blob",
+      shortcode: ":deleted_blob:",
+      animated: false,
+      available: false,
+    },
   },
 ];
 
@@ -72,14 +101,15 @@ export async function mockMappingData(page: Page) {
       return;
     }
 
-    const createdMapping = {
+    const createdMapping: StickerMapping = {
       id: "created-mapping-0000-0000-000000000000",
       guildId: testPrimaryGuild.id,
       emojiName: "🔥",
-      minioBucketName: "bigmoji-hidden",
-      minioObjectKey: "hidden/fire.png",
+      isDefault: false,
       createdAt: "2026-06-24T17:00:00Z",
       updatedAt: "2026-06-24T17:00:00Z",
+      stickerPreviewUrl: previewImage,
+      stickerPreviewState: "available",
     };
 
     mappings.push({

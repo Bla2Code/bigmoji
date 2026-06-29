@@ -15,11 +15,14 @@ import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class DiscordOAuthClient {
+  private static final Logger log = LoggerFactory.getLogger(DiscordOAuthClient.class);
   private static final String DISCORD_API_BASE = "https://discord.com/api";
   private static final BigInteger ADMINISTRATOR = BigInteger.ONE.shiftLeft(3);
   private static final BigInteger MANAGE_GUILD = BigInteger.ONE.shiftLeft(5);
@@ -53,6 +56,7 @@ public class DiscordOAuthClient {
     params.put("redirect_uri", redirectUri);
     params.put("scope", "identify guilds");
     params.put("state", state);
+    log.debug("Creating Discord OAuth authorization URL with redirectUri={}", redirectUri);
     return URI.create(DISCORD_API_BASE + "/oauth2/authorize?" + form(params));
   }
 
@@ -71,8 +75,11 @@ public class DiscordOAuthClient {
 
   public DiscordOAuthProfile authenticate(String code) {
     requireConfigured();
+    log.debug("Authenticating Discord OAuth callback with redirectUri={}", redirectUri);
     TokenResponse token = exchangeCode(code);
+    log.debug("Discord OAuth code exchange succeeded");
     DiscordUser user = getCurrentUser(token.accessToken());
+    log.debug("Discord OAuth current user lookup succeeded for userId={}", user.id());
     List<AuthorizedGuild> guilds =
         getCurrentUserGuilds(token.accessToken()).stream()
             .filter(this::isManageable)
@@ -124,10 +131,21 @@ public class DiscordOAuthClient {
       HttpResponse<String> response =
           httpClient.send(request, HttpResponse.BodyHandlers.ofString());
       if (response.statusCode() < 200 || response.statusCode() >= 300) {
+        log.warn(
+            "Discord OAuth2 request failed: method={}, uri={}, status={}, body={}",
+            request.method(),
+            request.uri(),
+            response.statusCode(),
+            response.body());
         throw new AuthenticationRequiredException("Discord OAuth2 request failed");
       }
       return objectMapper.readValue(response.body(), type);
     } catch (IOException ex) {
+      log.warn(
+          "Failed to read Discord OAuth2 response: method={}, uri={}",
+          request.method(),
+          request.uri(),
+          ex);
       throw new AuthenticationRequiredException("Failed to read Discord OAuth2 response");
     } catch (InterruptedException ex) {
       Thread.currentThread().interrupt();

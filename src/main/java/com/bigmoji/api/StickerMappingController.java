@@ -4,6 +4,8 @@ import com.bigmoji.api.dto.MappingResponse;
 import com.bigmoji.auth.AuthSession;
 import com.bigmoji.auth.AuthSessionInterceptor;
 import com.bigmoji.auth.GuildAuthorizationService;
+import com.bigmoji.discord.CustomEmojiMetadataProvider;
+import com.bigmoji.domain.entity.StickerMapping;
 import com.bigmoji.sticker.StickerMappingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,6 +14,7 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,11 +34,15 @@ import org.springframework.web.multipart.MultipartFile;
 public class StickerMappingController {
   private final StickerMappingService service;
   private final GuildAuthorizationService authorizationService;
+  private final CustomEmojiMetadataProvider emojiMetadataProvider;
 
   public StickerMappingController(
-      StickerMappingService service, GuildAuthorizationService authorizationService) {
+      StickerMappingService service,
+      GuildAuthorizationService authorizationService,
+      CustomEmojiMetadataProvider emojiMetadataProvider) {
     this.service = service;
     this.authorizationService = authorizationService;
+    this.emojiMetadataProvider = emojiMetadataProvider;
   }
 
   @Operation(summary = "Upload sticker mapping")
@@ -49,7 +56,7 @@ public class StickerMappingController {
       throws Exception {
     authorizationService.requireManageAccess(session, guildId);
     validateFile(file);
-    return MappingResponse.from(service.create(guildId, emojiName, file, false));
+    return toResponse(service.create(guildId, emojiName, file, false));
   }
 
   @Operation(summary = "List mappings for guild")
@@ -58,7 +65,20 @@ public class StickerMappingController {
       @RequestAttribute(AuthSessionInterceptor.REQUEST_ATTRIBUTE) AuthSession session,
       @PathVariable String guildId) {
     authorizationService.requireManageAccess(session, guildId);
-    return service.listByGuild(guildId).stream().map(MappingResponse::from).toList();
+    return service.listByGuild(guildId).stream().map(this::toResponse).toList();
+  }
+
+  @Operation(summary = "Preview uploaded sticker")
+  @GetMapping("/{id}/preview")
+  public ResponseEntity<byte[]> preview(
+      @RequestAttribute(AuthSessionInterceptor.REQUEST_ATTRIBUTE) AuthSession session,
+      @PathVariable UUID id)
+      throws Exception {
+    StickerMapping mapping = service.getById(id);
+    authorizationService.requireManageAccess(session, mapping.getGuildId());
+    return ResponseEntity.ok()
+        .contentType(mediaTypeFor(mapping.getMinioObjectKey()))
+        .body(service.previewBytesFor(mapping));
   }
 
   @Operation(summary = "Delete mapping")
@@ -70,6 +90,34 @@ public class StickerMappingController {
       throws Exception {
     authorizationService.requireManageAccess(session, service.getById(id).getGuildId());
     service.deleteById(id);
+  }
+
+  private MappingResponse toResponse(StickerMapping mapping) {
+    return MappingResponse.from(
+        mapping,
+        previewUrl(mapping),
+        emojiMetadataProvider.findFor(mapping.getGuildId(), mapping.getEmojiName()).orElse(null));
+  }
+
+  private String previewUrl(StickerMapping mapping) {
+    if (mapping.getId() == null) {
+      return null;
+    }
+    return "/api/mappings/" + mapping.getId() + "/preview";
+  }
+
+  private MediaType mediaTypeFor(String objectKey) {
+    String lower = objectKey == null ? "" : objectKey.toLowerCase();
+    if (lower.endsWith(".png")) {
+      return MediaType.IMAGE_PNG;
+    }
+    if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+      return MediaType.IMAGE_JPEG;
+    }
+    if (lower.endsWith(".webp")) {
+      return MediaType.parseMediaType("image/webp");
+    }
+    return MediaType.APPLICATION_OCTET_STREAM;
   }
 
   private void validateFile(MultipartFile file) {
