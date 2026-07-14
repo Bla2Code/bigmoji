@@ -47,6 +47,8 @@ export interface DefaultSticker {
   emojiName: string;
   shortcodeName: string;
   description: string;
+  stickerPreviewUrl?: string;
+  stickerPreviewState: StickerPreviewState;
 }
 
 export type StickerUploadStatus =

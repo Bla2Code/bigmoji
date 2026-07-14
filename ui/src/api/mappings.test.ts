@@ -14,7 +14,12 @@ describe("mapping API", () => {
   it("loads default stickers with credentials", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(defaultStickers));
 
-    await expect(listDefaultStickers()).resolves.toEqual(defaultStickers);
+    const response = await listDefaultStickers();
+
+    expect(response).toEqual(defaultStickers);
+    const cry = response.find((sticker) => sticker.shortcodeName === "cry");
+    expect(cry?.stickerPreviewUrl).toBe("/api/stickers/default/cry/preview");
+    expect(cry?.stickerPreviewState).toBe("available");
     expect(fetch).toHaveBeenCalledWith(
       "/api/stickers/default",
       expect.objectContaining({ credentials: "include" }),

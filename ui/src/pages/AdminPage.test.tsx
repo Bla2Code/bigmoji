@@ -1,7 +1,11 @@
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { render, screen, waitFor } from "@testing-library/react";
 import { ApiRequestError } from "../api/client";
-import { authenticatedSession, customMappings, defaultStickers } from "../test/fixtures";
+import {
+  authenticatedSession,
+  customMappings,
+  defaultStickers,
+} from "../test/fixtures";
 import type { CurrentSession } from "../api/types";
 import { AdminPage } from "./AdminPage";
 
@@ -72,8 +76,14 @@ describe("AdminPage", () => {
       expect(apiMocks.listMappings).toHaveBeenCalledWith("123456789012345678");
     });
 
-    expect(screen.getByRole("heading", { name: /upload custom sticker/i })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: /upload custom sticker/i }),
+    ).toBeVisible();
     expect(screen.getByRole("heading", { name: /default stickers/i })).toBeVisible();
+    expect(screen.getByText(":cry:")).toBeVisible();
+    expect(screen.getByText(":open_mouth:")).toBeVisible();
+    expect(screen.getByText(":pensive:")).toBeVisible();
+    expect(screen.getByText(":face_with_bags_under_eyes:")).toBeVisible();
     expect(screen.getByText("2 custom stickers")).toBeVisible();
   });
 
@@ -84,7 +94,9 @@ describe("AdminPage", () => {
     });
 
     expect(screen.getByRole("heading", { name: /access denied/i })).toBeVisible();
-    expect(screen.queryByRole("button", { name: /upload mapping/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /upload mapping/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("marks the session expired when protected data returns 401", async () => {

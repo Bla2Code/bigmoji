@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import type { DefaultSticker } from "../../api/types";
 import { EmptyState } from "../../components/EmptyState";
@@ -7,6 +8,8 @@ interface DefaultStickerListProps {
 }
 
 export function DefaultStickerList({ stickers }: DefaultStickerListProps) {
+  const [failedPreviews, setFailedPreviews] = useState<Set<string>>(() => new Set());
+
   if (stickers.length === 0) {
     return (
       <EmptyState
@@ -26,17 +29,44 @@ export function DefaultStickerList({ stickers }: DefaultStickerListProps) {
         </div>
       </div>
       <div className="default-sticker-grid">
-        {stickers.map((sticker) => (
-          <article className="default-sticker" key={sticker.shortcodeName}>
-            <span className="default-emoji" aria-hidden="true">
-              {sticker.emojiName}
-            </span>
-            <div>
-              <h3>:{sticker.shortcodeName}:</h3>
-              <p>{sticker.description}</p>
-            </div>
-          </article>
-        ))}
+        {stickers.map((sticker) => {
+          const shortcode = `:${sticker.shortcodeName}:`;
+          const showPreview =
+            sticker.stickerPreviewState === "available" &&
+            Boolean(sticker.stickerPreviewUrl) &&
+            !failedPreviews.has(sticker.shortcodeName);
+
+          return (
+            <article className="default-sticker" key={sticker.shortcodeName}>
+              <div className="default-sticker-preview">
+                {showPreview ? (
+                  <img
+                    alt={`Default sticker ${shortcode}`}
+                    onError={() => {
+                      setFailedPreviews((current) => {
+                        const next = new Set(current);
+                        next.add(sticker.shortcodeName);
+                        return next;
+                      });
+                    }}
+                    src={sticker.stickerPreviewUrl}
+                  />
+                ) : (
+                  <span>
+                    <span className="default-preview-emoji" aria-hidden="true">
+                      {sticker.emojiName}
+                    </span>
+                    Preview unavailable
+                  </span>
+                )}
+              </div>
+              <div className="default-sticker-copy">
+                <h3>{shortcode}</h3>
+                <p>{sticker.description}</p>
+              </div>
+            </article>
+          );
+        })}
       </div>
     </section>
   );
