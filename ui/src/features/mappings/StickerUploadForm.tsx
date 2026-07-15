@@ -108,7 +108,7 @@ export function StickerUploadForm({
               setEmojiName(event.target.value);
               setFieldErrors((current) => ({ ...current, emojiName: undefined }));
             }}
-            placeholder="🔥 or :fire:"
+            placeholder="🔥, :fire:, or <:custom:123456789>"
             value={emojiName}
           />
           {fieldErrors.emojiName ? (

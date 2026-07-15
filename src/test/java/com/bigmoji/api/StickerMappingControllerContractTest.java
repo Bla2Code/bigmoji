@@ -56,7 +56,8 @@ class StickerMappingControllerContractTest {
                     ":party_blob:",
                     "https://cdn.discordapp.com/emojis/987.png",
                     false,
-                    true)));
+                    true,
+                    null)));
     when(metadataProvider.findFor(GUILD_ID, "😊")).thenReturn(Optional.empty());
 
     List<MappingResponse> responses = controller(service, metadataProvider).list(session, GUILD_ID);
@@ -89,7 +90,8 @@ class StickerMappingControllerContractTest {
                     ":party_blob:",
                     "https://cdn.discordapp.com/emojis/987.png",
                     false,
-                    true)));
+                    true,
+                    null)));
 
     MappingResponse response =
         controller(service, metadataProvider).upload(session, GUILD_ID, ":party_blob:", file);

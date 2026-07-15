@@ -58,7 +58,17 @@ test.describe("mapping management", () => {
     await expect(
       page.getByRole("img", { name: /custom emoji :party_blob:/i }),
     ).toBeVisible();
+    await expect(page.getByText("😇")).toBeVisible();
+    await expect(page.getByRole("heading", { name: ":innocent:" })).toBeVisible();
+    await expect(page.getByText("😊")).toBeVisible();
+    await expect(page.getByText(":smile:")).toBeVisible();
     await expect(page.getByText(/preview unavailable/i)).toBeVisible();
+
+    const deleteButton = page.getByRole("button", { name: /^delete$/i }).first();
+    await expect(deleteButton.getByText("Delete", { exact: true })).toHaveCSS(
+      "color",
+      "rgb(255, 255, 255)",
+    );
 
     const hasOverflow = await page.evaluate(() => {
       return (

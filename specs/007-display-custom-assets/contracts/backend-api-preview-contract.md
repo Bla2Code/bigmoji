@@ -82,6 +82,8 @@ Backend behavior:
 - Return the mapping even when a preview URL cannot be generated.
 - Do not expose raw MinIO exceptions, bucket names, object keys, or stack traces in the response body.
 - Log internal preview generation failures for operators.
+- Resolve a name-only custom emoji from the bot's global cache only when exactly one case-insensitive match exists.
+- For full custom mentions such as `<:party_blob:987654321098765432>` or `<a:party_blob:987654321098765432>`, construct the Discord CDN preview from the validated numeric ID when JDA metadata is unavailable.
 
 ### Standard Unicode Emoji or Text Trigger
 
@@ -97,6 +99,21 @@ If `emojiName` does not match a server custom emoji, omit `emojiPreview` and pre
   "updatedAt": "2026-06-24T16:10:00Z",
   "stickerPreviewUrl": "/api/mappings/b1b2c3d4-e5f6-7890-abcd-ef1234567890/preview",
   "stickerPreviewState": "available"
+}
+```
+
+For a standard Discord shortcode, the backend may include resolved Unicode display metadata:
+
+```json
+{
+  "emojiName": ":innocent:",
+  "emojiPreview": {
+    "name": "innocent",
+    "shortcode": ":innocent:",
+    "animated": false,
+    "available": true,
+    "unicodeEmoji": "😇"
+  }
 }
 ```
 

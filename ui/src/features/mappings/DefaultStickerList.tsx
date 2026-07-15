@@ -61,7 +61,12 @@ export function DefaultStickerList({ stickers }: DefaultStickerListProps) {
                 )}
               </div>
               <div className="default-sticker-copy">
-                <h3>{shortcode}</h3>
+                <h3>
+                  <span className="default-sticker-emoji" aria-hidden="true">
+                    {sticker.emojiName}
+                  </span>
+                  {shortcode}
+                </h3>
                 <p>{sticker.description}</p>
               </div>
             </article>

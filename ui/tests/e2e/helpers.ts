@@ -27,11 +27,15 @@ export const testDefaults = [
     emojiName: "😊",
     shortcodeName: "smile",
     description: "Smiling face",
+    stickerPreviewUrl: previewImage,
+    stickerPreviewState: "available",
   },
   {
     emojiName: "🔥",
     shortcodeName: "fire",
     description: "Hype response",
+    stickerPreviewUrl: previewImage,
+    stickerPreviewState: "available",
   },
 ];
 
@@ -52,6 +56,23 @@ export const testMappings: StickerMapping[] = [
       imageUrl: previewImage,
       animated: false,
       available: true,
+    },
+  },
+  {
+    id: "c1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    guildId: testPrimaryGuild.id,
+    emojiName: ":innocent:",
+    isDefault: false,
+    createdAt: "2026-06-24T16:20:00Z",
+    updatedAt: "2026-06-24T16:20:00Z",
+    stickerPreviewUrl: previewImage,
+    stickerPreviewState: "available",
+    emojiPreview: {
+      name: "innocent",
+      shortcode: ":innocent:",
+      animated: false,
+      available: true,
+      unicodeEmoji: "😇",
     },
   },
   {

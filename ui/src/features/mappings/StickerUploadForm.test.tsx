@@ -26,6 +26,15 @@ function renderForm() {
 }
 
 describe("StickerUploadForm", () => {
+  it("documents Discord custom emoji mention input", () => {
+    renderForm();
+
+    expect(screen.getByLabelText(/emoji trigger/i)).toHaveAttribute(
+      "placeholder",
+      "🔥, :fire:, or <:custom:123456789>",
+    );
+  });
+
   it("validates required emoji and file inputs", async () => {
     renderForm();
 
