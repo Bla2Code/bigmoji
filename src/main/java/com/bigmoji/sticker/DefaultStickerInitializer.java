@@ -13,7 +13,7 @@ public class DefaultStickerInitializer {
 
   public static final List<DefaultSticker> DEFAULTS =
       List.of(
-          new DefaultSticker("😊", "smile", "Smiling face", "smile.png"),
+          new DefaultSticker("😄", "smile", "Smiling face", "smile.png"),
           new DefaultSticker("❤️", "heart", "Red heart", "heart.png"),
           new DefaultSticker("🎉", "party", "Party popper", "party.png"),
           new DefaultSticker("👍", "thumbsup", "Thumbs up", "thumbsup.png"),

@@ -32,4 +32,25 @@ class StickerMappingCacheTest {
     verify(repository).findByGuildIdAndEmojiName("guild-1", "aaa");
     verify(repository).findByGuildId("guild-1");
   }
+
+  @Test
+  void resolvesPersistedStandardShortcodeFromIncomingUnicode() {
+    StickerMappingRepository repository = mock(StickerMappingRepository.class);
+    StickerMapping mapping = new StickerMapping();
+    mapping.setGuildId("guild-1");
+    mapping.setEmojiName(":innocent:");
+
+    when(repository.findByGuildIdAndEmojiName("guild-1", "innocent")).thenReturn(List.of());
+    when(repository.findByGuildId("guild-1")).thenReturn(List.of(mapping));
+
+    StickerMappingCache cache = new StickerMappingCache(repository);
+    cache.refreshGuildEmoji("guild-1", "😇");
+
+    List<StickerMapping> found = cache.find("guild-1", "😇");
+
+    assertEquals(1, found.size());
+    assertSame(mapping, found.getFirst());
+    verify(repository).findByGuildIdAndEmojiName("guild-1", "innocent");
+    verify(repository).findByGuildId("guild-1");
+  }
 }
