@@ -27,6 +27,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
     implementation("net.dv8tion:JDA:5.6.1")
+    implementation("net.fellbaum:jemoji:1.7.6")
     implementation("io.minio:minio:8.5.17")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
 

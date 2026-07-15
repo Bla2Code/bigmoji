@@ -1,6 +1,7 @@
 package com.bigmoji.emoji;
 
 import java.util.regex.Pattern;
+import net.fellbaum.jemoji.EmojiManager;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,9 +17,7 @@ public class EmojiDetector {
     if (trimmed.isEmpty()) return false;
     if (DISCORD_CUSTOM_EMOJI.matcher(trimmed).matches()) return true;
     if (SHORTCODE.matcher(trimmed).matches()) return true;
-    int codePoints = trimmed.codePointCount(0, trimmed.length());
-    return codePoints == 1
-        || (codePoints <= 4 && trimmed.matches("[\\p{So}\\p{Sk}\\uFE0F\\u200D]+"));
+    return EmojiManager.isEmoji(trimmed);
   }
 
   public String normalize(String content) {

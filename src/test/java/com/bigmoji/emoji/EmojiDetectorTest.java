@@ -10,6 +10,7 @@ class EmojiDetectorTest {
   @Test
   void detectsSingleEmojiAndShortcode() {
     assertTrue(detector.isSingleEmojiMessage("😊"));
+    assertTrue(detector.isSingleEmojiMessage("👨‍👩‍👧‍👦"));
     assertTrue(detector.isSingleEmojiMessage("😢"));
     assertTrue(detector.isSingleEmojiMessage("🫩"));
     assertTrue(detector.isSingleEmojiMessage(":smile:"));
@@ -24,18 +25,29 @@ class EmojiDetectorTest {
     assertFalse(
         detector.isSingleEmojiMessage("<:aaa:933444648909832222> <:bbb:933444648909832223>"));
     assertFalse(detector.isSingleEmojiMessage("hi 😊"));
+    assertFalse(detector.isSingleEmojiMessage("a"));
     assertFalse(detector.isSingleEmojiMessage("   "));
   }
 
   @Test
   void normalizesDefaultEmojiToCanonicalCode() {
     assertEquals("smile", detector.normalize("😊"));
+    assertEquals("smile", detector.normalize("😄"));
     assertEquals("heart", detector.normalize("❤️"));
     assertEquals("thumbsup", detector.normalize("👍🏻"));
     assertEquals("fire", detector.normalize("🔥"));
     assertEquals("party", detector.normalize(":party:"));
     assertEquals("aaa", detector.normalize("<:aaa:933444648909832222>"));
     assertEquals("partyblob", detector.normalize("<a:PartyBlob:933444648909832222>"));
+  }
+
+  @Test
+  void normalizesStandardUnicodeAndDiscordShortcodesFromEmojiMetadata() {
+    assertEquals("innocent", detector.normalize("😇"));
+    assertEquals("innocent", detector.normalize(":innocent:"));
+    assertEquals("grimacing", detector.normalize("😬"));
+    assertEquals("grimacing", detector.normalize(":grimacing:"));
+    assertEquals(detector.normalize(":family_mwgb:"), detector.normalize("👨‍👩‍👧‍👦"));
   }
 
   @Test

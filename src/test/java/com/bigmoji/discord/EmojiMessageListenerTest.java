@@ -13,6 +13,8 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class EmojiMessageListenerTest {
 
@@ -122,6 +124,49 @@ class EmojiMessageListenerTest {
     verify(sender, never()).send(any(), any(byte[].class), anyString());
     verify(message).delete();
     verify(mappingService).resolveSticker("1", "smile");
+  }
+
+  @ParameterizedTest
+  @CsvSource({"😇,innocent", "😄,smile", "😬,grimacing"})
+  void resolvesDiscordUnicodeThroughCanonicalShortcode(String unicode, String shortcode)
+      throws Exception {
+    EmojiDetector detector = new EmojiDetector();
+    StickerMappingService mappingService = mock(StickerMappingService.class);
+    StickerSenderService sender = mock(StickerSenderService.class);
+    WebhookStickerSender webhookSender = mockWebhookSender();
+    EmojiMessageListener listener =
+        new EmojiMessageListener(detector, mappingService, sender, webhookSender);
+
+    MessageReceivedEvent event = mock(MessageReceivedEvent.class);
+    Message message = mock(Message.class);
+    User user = mock(User.class);
+    Guild guild = mock(Guild.class);
+    MessageChannelUnion channel = mock(MessageChannelUnion.class);
+    byte[] stickerBytes = new byte[] {1, 2, 3};
+    StickerAsset asset = new StickerAsset("sticker.png", stickerBytes, false, "custom.png");
+
+    when(event.getAuthor()).thenReturn(user);
+    when(user.isBot()).thenReturn(false);
+    when(user.getName()).thenReturn("Alice");
+    when(user.getEffectiveAvatarUrl()).thenReturn("http://avatar.url");
+    when(event.getMessage()).thenReturn(message);
+    when(message.getContentRaw()).thenReturn(unicode);
+    when(event.isFromGuild()).thenReturn(true);
+    when(event.getGuild()).thenReturn(guild);
+    when(guild.getId()).thenReturn("guild-1");
+    when(event.getChannel()).thenReturn(channel);
+    when(channel.getId()).thenReturn("channel-1");
+    when(mappingService.resolveSticker("guild-1", shortcode)).thenReturn(Optional.of(asset));
+    when(webhookSender.sendAsAuthor(
+            eq(channel), eq(stickerBytes), eq("sticker.png"), eq("Alice"), eq("http://avatar.url")))
+        .thenReturn(true);
+
+    listener.onMessageReceived(event);
+
+    verify(mappingService).resolveSticker("guild-1", shortcode);
+    verify(webhookSender)
+        .sendAsAuthor(
+            eq(channel), eq(stickerBytes), eq("sticker.png"), eq("Alice"), eq("http://avatar.url"));
   }
 
   @Test

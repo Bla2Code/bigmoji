@@ -51,6 +51,13 @@ class DefaultStickerInitializerTest {
   }
 
   @Test
+  void smileCatalogEntryUsesDiscordSmileUnicode() {
+    DefaultStickerInitializer init = new DefaultStickerInitializer(new DefaultResourceLoader());
+
+    assertEquals("😄", init.findByShortcodeName("smile").orElseThrow().emojiName());
+  }
+
+  @Test
   void bundledAssetsUseDiscordOrientedSquareCanvas() throws Exception {
     DefaultStickerInitializer init = new DefaultStickerInitializer(new DefaultResourceLoader());
     ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
