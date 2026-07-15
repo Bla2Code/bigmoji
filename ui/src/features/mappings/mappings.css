@@ -166,10 +166,16 @@
   max-width: 100%;
   padding: 0 3px;
   overflow: hidden;
+  font-family: system-ui, sans-serif;
   font-size: 0.78rem;
   font-weight: 900;
   line-height: 1;
   overflow-wrap: anywhere;
+}
+
+.mapping-emoji-unicode {
+  font-size: 1.65rem;
+  font-weight: 400;
 }
 
 .default-sticker h3,
@@ -183,8 +189,19 @@
 }
 
 .default-sticker h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   overflow-wrap: anywhere;
   line-height: 1.18;
+}
+
+.default-sticker-emoji {
+  flex: 0 0 auto;
+  font-family: system-ui, sans-serif;
+  font-size: 1.45rem;
+  font-weight: 400;
+  line-height: 1;
 }
 
 .default-sticker p,
@@ -264,7 +281,8 @@
   min-width: 0;
 }
 
-.mapping-group li span {
+.mapping-group li > span,
+.mapping-row-copy span {
   color: var(--color-muted);
 }
 

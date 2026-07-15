@@ -31,6 +31,30 @@ describe("MappingList", () => {
     expect(screen.getByRole("img", { name: /uploaded sticker for 😊/i })).toBeVisible();
   });
 
+  it("renders standard Discord shortcode as Unicode with its code", () => {
+    render(
+      <MappingList
+        mappings={[
+          {
+            ...customMappings[2]!,
+            emojiName: ":innocent:",
+            emojiPreview: {
+              name: "innocent",
+              shortcode: ":innocent:",
+              animated: false,
+              available: true,
+              unicodeEmoji: "😇",
+            },
+          },
+        ]}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("😇")).toBeVisible();
+    expect(screen.getByRole("heading", { name: ":innocent:" })).toBeVisible();
+  });
+
   it("shows unavailable placeholders instead of broken preview images", () => {
     render(<MappingList mappings={[customMappings[3]!]} onDelete={vi.fn()} />);
 

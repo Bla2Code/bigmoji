@@ -16,6 +16,7 @@ describe("DefaultStickerList", () => {
     expect(screen.getByText(":open_mouth:")).toBeVisible();
     expect(screen.getByText(":pensive:")).toBeVisible();
     expect(screen.getByText(":face_with_bags_under_eyes:")).toBeVisible();
+    expect(screen.getByText("😢")).toBeVisible();
   });
 
   it("renders available sticker preview images", () => {

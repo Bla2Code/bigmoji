@@ -69,6 +69,11 @@ export function MappingList({ mappings, onDelete }: MappingListProps) {
             Boolean(group.emojiPreview?.available) &&
             Boolean(group.emojiPreview?.imageUrl) &&
             !failedAssets.has(emojiAssetKey);
+          const fallbackEmoji =
+            group.emojiPreview?.unicodeEmoji ?? group.fallbackTrigger;
+          const hasUnicodeEmoji =
+            Boolean(group.emojiPreview?.unicodeEmoji) ||
+            /\p{Extended_Pictographic}/u.test(group.fallbackTrigger);
 
           return (
             <article className="mapping-group" key={group.groupKey}>
@@ -81,8 +86,10 @@ export function MappingList({ mappings, onDelete }: MappingListProps) {
                       src={group.emojiPreview.imageUrl}
                     />
                   ) : (
-                    <span className="mapping-emoji-fallback">
-                      {group.fallbackTrigger}
+                    <span
+                      className={`mapping-emoji-fallback${hasUnicodeEmoji ? " mapping-emoji-unicode" : ""}`}
+                    >
+                      {fallbackEmoji}
                     </span>
                   )}
                 </span>

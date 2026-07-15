@@ -175,6 +175,11 @@ a.button-danger {
   color: #fff;
 }
 
+.button-danger > span,
+a.button-danger > span {
+  color: inherit;
+}
+
 .button-icon {
   display: inline-flex;
 }

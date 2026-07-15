@@ -29,6 +29,7 @@ export interface ServerEmojiPreview {
   imageUrl?: string;
   animated: boolean;
   available: boolean;
+  unicodeEmoji?: string;
 }
 
 export interface StickerMapping {

@@ -43,7 +43,8 @@ public record MappingResponse(
       String shortcode,
       String imageUrl,
       boolean animated,
-      boolean available) {
+      boolean available,
+      String unicodeEmoji) {
     static ServerEmojiPreview from(CustomEmojiMetadata metadata) {
       if (metadata == null) {
         return null;
@@ -55,7 +56,8 @@ public record MappingResponse(
           metadata.shortcode(),
           metadata.imageUrl(),
           metadata.animated(),
-          metadata.available());
+          metadata.available(),
+          metadata.unicodeEmoji());
     }
   }
 }

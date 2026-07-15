@@ -57,10 +57,14 @@ Represents display metadata for a server custom emoji in the selected guild.
 | `imageUrl` | string | Optional | Browser-safe custom emoji image URL |
 | `animated` | boolean | Required | Whether Discord marks the emoji as animated |
 | `available` | boolean | Required | Whether visual preview can be displayed |
+| `unicodeEmoji` | string | Optional | Unicode glyph resolved from a standard Discord shortcode |
 
 **Validation Rules**:
 - Metadata is scoped to the selected guild.
-- If `available` is false or `imageUrl` is absent, UI uses `shortcode` or `name` as fallback text.
+- A name-only trigger may use a unique match from the bot's global JDA emoji cache when the selected guild is unavailable; duplicate names must remain unresolved.
+- A full Discord custom emoji mention supplies its own ID and animation flag, allowing a CDN preview without JDA guild access.
+- For a standard Discord shortcode, `unicodeEmoji` provides the visual glyph while `shortcode` remains the readable label.
+- If neither `imageUrl` nor `unicodeEmoji` is available, UI uses `shortcode` or `name` as fallback text.
 - Duplicate emoji names should remain distinguishable by visual preview where available and by stable grouping context.
 
 ### MappingGroupViewModel
