@@ -10,7 +10,7 @@
 | `DISCORD_CLIENT_ID` | пусто | OAuth client/application ID |
 | `DISCORD_CLIENT_SECRET` | пусто | OAuth client secret |
 | `DISCORD_REDIRECT_URI` | `http://localhost:8080/api/auth/discord/callback` | callback, должен совпадать с Developer Portal |
-| `DISCORD_BOT_PERMISSIONS` | `125952` | permissions integer для install URL |
+| `DISCORD_BOT_PERMISSIONS` | `536996864` | permissions integer для install URL, включая Manage Webhooks |
 | `UI_URL` | `http://localhost:3000` | redirect после успешного входа |
 
 Для UI за nginx рекомендуется callback на UI origin: `http://localhost:3000/api/auth/discord/callback`. Nginx передаст запрос backend.
