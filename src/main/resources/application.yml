@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: bigmoji
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/bigmoji}
+    username: ${POSTGRES_USER:bigmoji}
+    password: ${POSTGRES_PASSWORD:bigmoji}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+server:
+  port: 8080
+
+bigmoji:
+  auth:
+    session-secret: ${AUTH_SESSION_SECRET:dev-session-secret-change-me}
+    session-ttl: ${AUTH_SESSION_TTL:PT8H}
+    secure-cookies: ${AUTH_SECURE_COOKIES:false}
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadminpassword}
+    bucket-prefix: ${MINIO_BUCKET_PREFIX:bigmoji-}
+  discord:
+    token: ${DISCORD_TOKEN:}
+    oauth:
+      client-id: ${DISCORD_CLIENT_ID:}
+      client-secret: ${DISCORD_CLIENT_SECRET:}
+      redirect-uri: ${DISCORD_REDIRECT_URI:http://localhost:8080/api/auth/discord/callback}
+      post-login-redirect-uri: ${UI_URL:http://localhost:3000}
+      bot-permissions: ${DISCORD_BOT_PERMISSIONS:125952}
+  async:
+    core-pool-size: ${ASYNC_CORE_POOL_SIZE:10}
+    max-pool-size: ${ASYNC_MAX_POOL_SIZE:20}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    com.bigmoji.auth: DEBUG
+    com.bigmoji.discord: DEBUG

@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: bigmoji
+      POSTGRES_USER: ${POSTGRES_USER:-bigmoji}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bigmoji}
+    ports:
+      - "5432:5432"
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadminpassword}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  bigmoji-app:
+    build: .
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - minio
+    ports:
+      - "8080:8080"
+
+  bigmoji-ui:
+    profiles:
+      - ui
+    build:
+      context: ./ui
+    environment:
+      BIGMOJI_BACKEND_URL: http://bigmoji-app:8080
+    depends_on:
+      - bigmoji-app
+    ports:
+      - "3000:80"

@@ -1,0 +1,189 @@
+package com.bigmoji.discord;
+
+import com.bigmoji.emoji.EmojiDetector;
+import com.bigmoji.sticker.StickerAsset;
+import com.bigmoji.sticker.StickerMappingService;
+import java.util.Optional;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
+
+@Component
+public class EmojiMessageListener extends ListenerAdapter {
+  private static final Logger log = LoggerFactory.getLogger(EmojiMessageListener.class);
+
+  private static final String STATE_MAPPED_DEFAULT = "MAPPED_DEFAULT";
+  private static final String STATE_UNMAPPED_EMOJI = "UNMAPPED_EMOJI";
+  private static final String STATE_NO_EMOJI = "NO_EMOJI";
+  private static final String STATE_RESOURCE_MISSING = "RESOURCE_MISSING";
+  private static final String STATE_WEBHOOK_FALLBACK = "WEBHOOK_FALLBACK";
+
+  private final EmojiDetector detector;
+  private final StickerMappingService mappingService;
+  private final StickerSenderService senderService;
+  private final WebhookStickerSender webhookSender;
+
+  public EmojiMessageListener(
+      EmojiDetector detector,
+      StickerMappingService mappingService,
+      StickerSenderService senderService,
+      WebhookStickerSender webhookSender) {
+    this.detector = detector;
+    this.mappingService = mappingService;
+    this.senderService = senderService;
+    this.webhookSender = webhookSender;
+  }
+
+  @Override
+  @Async("messageExecutor")
+  public void onMessageReceived(MessageReceivedEvent event) {
+    var message = event.getMessage();
+    var raw = message.getContentRaw();
+    var sourceGuildId = event.isFromGuild() ? event.getGuild().getId() : "DM";
+    var channelId = event.getChannel().getId();
+    var authorId = event.getAuthor().getId();
+
+    log.debug(
+        "Message received: guildId={}, channelId={}, authorId={}, isBot={}, rawContent={}",
+        sourceGuildId,
+        channelId,
+        authorId,
+        event.getAuthor().isBot(),
+        raw);
+
+    if (event.getAuthor().isBot()) {
+      log.debug(
+          "Message skipped: reason=BOT_AUTHOR, guildId={}, channelId={}", sourceGuildId, channelId);
+      return;
+    }
+
+    boolean singleEmoji = detector.isSingleEmojiMessage(raw);
+    log.debug(
+        "Emoji detection result: guildId={}, channelId={}, rawContent={}, isSingleEmojiMessage={}",
+        sourceGuildId,
+        channelId,
+        raw,
+        singleEmoji);
+
+    if (!singleEmoji) {
+      log.debug(
+          "Decision state: state={}, guildId={}, channelId={}, reason=NO_SINGLE_EMOJI",
+          STATE_NO_EMOJI,
+          sourceGuildId,
+          channelId);
+      return;
+    }
+
+    if (!event.isFromGuild()) {
+      log.debug(
+          "Decision state: state={}, guildId={}, channelId={}, reason=DM_NOT_SUPPORTED",
+          STATE_UNMAPPED_EMOJI,
+          sourceGuildId,
+          channelId);
+      return;
+    }
+
+    String normalized = detector.normalize(raw);
+    String guildId = event.getGuild().getId();
+
+    log.debug(
+        "Emoji normalization result: guildId={}, channelId={}, rawContent={}, normalizedEmoji={}",
+        guildId,
+        channelId,
+        raw,
+        normalized);
+
+    Optional<StickerAsset> sticker = Optional.empty();
+    try {
+      sticker = mappingService.resolveSticker(guildId, normalized);
+    } catch (Exception e) {
+      log.warn(
+          "Decision state: state={}, guildId={}, channelId={}, normalizedEmoji={}, error={}",
+          STATE_RESOURCE_MISSING,
+          guildId,
+          channelId,
+          normalized,
+          e.getMessage());
+      return;
+    }
+
+    if (sticker.isEmpty()) {
+      log.debug(
+          "Mapping lookup result: guildId={}, normalizedEmoji={}, found=false",
+          guildId,
+          normalized);
+      log.debug(
+          "Decision state: state={}, guildId={}, channelId={}, normalizedEmoji={}",
+          STATE_UNMAPPED_EMOJI,
+          guildId,
+          channelId,
+          normalized);
+      return;
+    }
+
+    StickerAsset selected = sticker.get();
+    log.debug(
+        "Mapping lookup result: guildId={}, normalizedEmoji={}, found=true, objectKey={}, isDefault={}",
+        guildId,
+        normalized,
+        selected.debugKey(),
+        selected.isDefault());
+
+    try {
+      byte[] stickerBytes = selected.bytes();
+      String fileName = selected.fileName();
+
+      log.debug(
+          "Sticker loaded: objectKey={}, sizeBytes={}", selected.debugKey(), stickerBytes.length);
+
+      String authorName = resolveAuthorName(event);
+      String authorAvatarUrl = event.getAuthor().getEffectiveAvatarUrl();
+
+      boolean sentViaWebhook =
+          webhookSender.sendAsAuthor(
+              event.getChannel(), stickerBytes, fileName, authorName, authorAvatarUrl);
+
+      if (!sentViaWebhook) {
+        senderService.send(event.getChannel(), stickerBytes, fileName);
+        log.debug(
+            "Decision state: state={}, guildId={}, channelId={}, normalizedEmoji={}, objectKey={}, sendMethod=FALLBACK_BOT",
+            STATE_WEBHOOK_FALLBACK,
+            guildId,
+            channelId,
+            normalized,
+            selected.debugKey());
+      }
+
+      message.delete().queue();
+      log.debug(
+          "Decision state: state={}, guildId={}, channelId={}, normalizedEmoji={}, objectKey={}, sendMethod={}",
+          STATE_MAPPED_DEFAULT,
+          guildId,
+          channelId,
+          normalized,
+          selected.debugKey(),
+          sentViaWebhook ? "WEBHOOK" : "DIRECT");
+    } catch (Exception e) {
+      log.warn(
+          "Decision state: state={}, guildId={}, channelId={}, normalizedEmoji={}, objectKey={}, error={}",
+          STATE_RESOURCE_MISSING,
+          guildId,
+          channelId,
+          normalized,
+          selected.debugKey(),
+          e.getMessage());
+    }
+  }
+
+  private String resolveAuthorName(MessageReceivedEvent event) {
+    Member member = event.getMember();
+    if (member != null) {
+      return member.getEffectiveName();
+    }
+    return event.getAuthor().getName();
+  }
+}
