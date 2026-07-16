@@ -30,7 +30,7 @@ bigmoji:
       client-secret: ${DISCORD_CLIENT_SECRET:}
       redirect-uri: ${DISCORD_REDIRECT_URI:http://localhost:8080/api/auth/discord/callback}
       post-login-redirect-uri: ${UI_URL:http://localhost:3000}
-      bot-permissions: ${DISCORD_BOT_PERMISSIONS:125952}
+      bot-permissions: ${DISCORD_BOT_PERMISSIONS:536996864}
   async:
     core-pool-size: ${ASYNC_CORE_POOL_SIZE:10}
     max-pool-size: ${ASYNC_MAX_POOL_SIZE:20}

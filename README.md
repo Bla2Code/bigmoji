@@ -106,7 +106,7 @@ The recommended Discord permissions integer is `536996864`. Set it before genera
 DISCORD_BOT_PERMISSIONS=536996864
 ```
 
-The project's default value, `125952`, includes all permissions above except **Manage Webhooks**. Bigmoji still works with that value, but replacement images are sent under the bot's own name.
+The project's default value is `536996864`, including **Manage Webhooks** so replacement images retain the original author's name and avatar. If you override this value, keep **Manage Webhooks** enabled or Bigmoji will fall back to its own identity.
 
 For tighter security, grant these permissions only in the categories or text channels where Bigmoji is intended to operate. A channel-level deny overrides a server role allow, so check the channel's **Permissions** page if the bot can work in one channel but not another. Administrator permission is not required or recommended for the bot.
 
@@ -213,7 +213,7 @@ Bigmoji reads configuration from environment variables. See [`.env.example`](.en
 | `DISCORD_CLIENT_ID` | empty | Discord application/client ID |
 | `DISCORD_CLIENT_SECRET` | empty | Discord OAuth2 client secret |
 | `DISCORD_REDIRECT_URI` | `http://localhost:8080/api/auth/discord/callback` | Exact registered OAuth2 callback |
-| `DISCORD_BOT_PERMISSIONS` | `125952` | Permissions integer used by the generated bot install URL |
+| `DISCORD_BOT_PERMISSIONS` | `536996864` | Permissions integer used by the generated bot install URL, including Manage Webhooks |
 | `UI_URL` | `http://localhost:3000` | Redirect destination after sign-in |
 | `AUTH_SESSION_SECRET` | insecure development value | Signing secret; use at least 32 random bytes in production |
 | `AUTH_SESSION_TTL` | `PT8H` | Session lifetime as an ISO-8601 duration |
