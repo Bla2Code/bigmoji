@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 public class DiscordOAuthClient {
   private static final Logger log = LoggerFactory.getLogger(DiscordOAuthClient.class);
   private static final String DISCORD_API_BASE = "https://discord.com/api";
+  static final String DEFAULT_BOT_PERMISSIONS = "536996864";
   private static final BigInteger ADMINISTRATOR = BigInteger.ONE.shiftLeft(3);
   private static final BigInteger MANAGE_GUILD = BigInteger.ONE.shiftLeft(5);
 
@@ -39,7 +40,8 @@ public class DiscordOAuthClient {
       @Value("${bigmoji.discord.oauth.client-id:}") String clientId,
       @Value("${bigmoji.discord.oauth.client-secret:}") String clientSecret,
       @Value("${bigmoji.discord.oauth.redirect-uri:}") String redirectUri,
-      @Value("${bigmoji.discord.oauth.bot-permissions:125952}") String botPermissions) {
+      @Value("${bigmoji.discord.oauth.bot-permissions:" + DEFAULT_BOT_PERMISSIONS + "}")
+          String botPermissions) {
     this.objectMapper = objectMapper;
     this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
     this.clientId = clientId;
